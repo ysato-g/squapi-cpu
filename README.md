@@ -1,4 +1,4 @@
-# **squapi-cpu: Scalable QuAPI for CPU**
+# ** Scalable QuAPI implementation **
 
 ## What's Scalable QuAPI?
 The *quasi-adiabatic propagator path integral* or QuAPI is a powerful numerical methodology to compute quantum dynamics of open quantum systems, originally developed by N. Makri and D. E. Makarov in 1994.
