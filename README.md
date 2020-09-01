@@ -20,7 +20,7 @@ The essential requirements for all platforms are as follows:
     * MPI implementation to build and run squapi_mpi, the MPI version of squapi.   
     * Python 3 with numpy, scipy, and matplotlib packages.
 For an easy and complete installation of Python 3, [Anaconda](https://www.anaconda.com/products/individual) is recommended.
-The current version of squapi_mpi has been develped using [Open MPI](https://www.open-mpi.org/), but it should work with any other MPI implementations. 
+The current version of squapi_mpi has been develped using [Open MPI](https://www.open-mpi.org/), but it should work with any other MPI implementations as well. 
 Also, squapi_omp usually outperforms squapi_mpi on a single node, so MPI would not be necessary for a multi-core shared-memory platform. 
 
 ## Installation 
