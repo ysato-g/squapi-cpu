@@ -32,7 +32,7 @@ $ brew install gcc
 $ brew install open-mpi
 ```
 
-This has installed GCC verson 10.2 on my platform, so I represent the C++ compiler by ```g++-10``` in the following instructions. 
+This has installed GCC version 10.2 on my platform, so I represent the C++ compiler by ```g++-10``` in the following instructions. 
 If your GCC is differnt from verson 10, edit ```CXX = g++-10``` in Makefile to the right version. 
 For the complete installation, run the following in the root directory (where Makefile is present):
 
@@ -62,7 +62,7 @@ $ cp src/squapi.py bin
 ```
 
 will be enough.
-Here ```g++-10``` needs to be changed, if not GCC, to the command for your compiler.
+Here ```g++-10``` needs to be changed, if not GCC ver. 10, to the command for your compiler.
 
 
 
