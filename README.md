@@ -33,7 +33,7 @@ $ brew install open-mpi
 ```
 
 This has installed GCC version 10.2 on my platform, so I represent the C++ compiler by ```g++-10``` in the following instructions. 
-If your GCC is differnt from verson 10, edit ```CXX = g++-10``` in Makefile to the right version. 
+If your GCC is differnt from version 10, edit ```CXX = g++-10``` in Makefile to the right version. 
 For the complete installation, run the following in the root directory (where Makefile is present):
 
 ```
