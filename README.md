@@ -12,7 +12,7 @@ The algorithm has been implemented on a GPU accelerated cluster and demonstraing
 ## System Requirement
 **squpai-cpu** is a set of command-line tools (executables).
 It requires C++ compiler to build and Python 3 to generate necessary input files.
-The squapi-cpu executables and the accompanying Python script have been developed using **MacOS** 10.14 (Mojave) and tested on **Linux** CenOS 7.6.
+The squapi-cpu executables and the accompanying Python script have been developed using **macOS** 10.14 (Mojave) and tested on **Linux** CenOS 7.6.
 The essential requirements for all platforms are as follows:
 
     * Any C++ compiler supporting C++11 to build squapi, the serial version.  
@@ -24,7 +24,7 @@ The current version of squapi_mpi has been develped using [Open MPI](https://www
 Also, squapi_omp usually outperforms squapi_mpi on a single node, so MPI would not be necessary for a multi-core shared-memory platform. 
 
 ## Installation 
-For **MacOS**, GCC and Open MPI can readily be installed with [Homebrew](https://github.com/Homebrew).
+For **macOS**, GCC and Open MPI can readily be installed with [Homebrew](https://github.com/Homebrew).
 After installing [Xcode](https://developer.apple.com/xcode/) and Homebrew, 
 
 ```
