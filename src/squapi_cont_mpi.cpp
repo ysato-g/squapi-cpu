@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.2.0 (MPI with some OpenMP for multi-node system)
+ * version: 0.2.1 (MPI with some OpenMP for multi-node system)
  * Date Created : 8/21/20
- * Date Last mod: 8/25/20
+ * Date Last mod: 9/2/20
  * Author: Yoshihiro Sato
  * Description: the main function of squapi_cont_mpi. squapi_cont_mpi takes D.dat and rhos.dat
  *              to continue time evlolution pereviousely done by squapi_mpi. 
@@ -154,6 +154,8 @@ int main(int argc, char* argv[])
             if (myid == root){
                 getrhos_omp(N, U, C[n], W[n], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
             }
+            // below full MPI version (not so fast):
+            //getrhos_mpi(N, myid, nprocs, root, U, C[n], W[n], D, s, gm0, gm1, gm2, gm3, gm4, rhos);            
         }
         else if (N == Dkmax + 1){
             /******************* STEP 3 **************************/
@@ -162,6 +164,8 @@ int main(int argc, char* argv[])
             if (myid == root){
               getrhos_omp(N, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
             }
+            // below full MPI version (not so fast):
+            //getrhos_mpi(N, myid, nprocs, root, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
         else{
             /******************* STEP 4 **************************/
@@ -170,6 +174,8 @@ int main(int argc, char* argv[])
             if (myid == root){
               getrhos_omp(N, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
             }
+            // below full MPI version (not so fast):
+            //getrhos_mpi(N, myid, nprocs, root, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
         // *** write N and rhos into rhos.dat ***
         if (myid == root){
