@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.2.0 (x.2.x MPI)
+ * version: 0.2.1 (x.2.x MPI)
  * Date Created : 8/23/20
- * Date Last mod: 8/30/20
+ * Date Last mod: 9/2/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_mpi.cpp and squapi_cont_mpi.cpp 
  * Notes:
@@ -12,6 +12,7 @@
  *      - Based on C++11
  *      - Develped using gcc 10.2.0 on MacOS 10.14 
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
+ *      - getrhos_mpi added on 9/2/20
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved 
  **********************************************************************************/
 #include <iostream>
@@ -471,7 +472,7 @@ void getD1_mpi(int N,
         Cn_1bufall.resize(block_reg * nprocs);
         Dibufall.resize(block_reg   * nprocs);
     }
-    int i0 = 0; // the start position of C[n-1] and W[n-1] for the round
+    int i0 = 0; // the start position of Cn_1 for the round
     for (int round = 0; round < nrounds; ++round){
         MPI_Comm comm;
         int block;
@@ -557,5 +558,151 @@ void getD1_mpi(int N,
     } // round loop ends
 }
 
+
+
+void getrhos_mpi(int N,
+                 int myid, int nprocs, int root,
+                 std::vector<std::complex<double>>& U,
+                 std::vector<unsigned long long>&   Cn,
+                 std::vector<std::complex<double>>& Wn,
+                 std::vector<std::complex<double>>& D,
+                 std::vector<std::vector<std::complex<double>>>& s,
+                 std::vector<std::complex<double>>& gm0,
+                 std::vector<std::complex<double>>& gm1,
+                 std::vector<std::vector<std::complex<double>>>& gm2,
+                 std::vector<std::vector<std::complex<double>>>& gm3,
+                 std::vector<std::vector<std::complex<double>>>& gm4,
+                 std::vector<std::complex<double>>& rhos)
+{
+    /**********************************************************
+     *  Computes rhos from D based on Eq.(18) for N > 0. 
+     *  MPI version of getrhos.
+     * *******************************************************/
+    int Dkmax = gm2[0].size();
+    int M     = s[0].size();
+    int size  = Cn.size();
+    int n     = std::min(N, Dkmax + 1);
+
+    // root broadcasts size to all ranks:
+    MPI_Bcast(&size, 1, MPI_INT, root, MPI_COMM_WORLD);
+
+    // --- buffers for Scatter / Gather ---
+    std::vector<unsigned long long>   Cnbuf, Cnbufall;
+    std::vector<std::complex<double>> Wnbuf, Wnbufall;
+    std::vector<std::complex<double>> Dbuf,  Dbufall;
+    std::vector<std::complex<double>> rhosbuf(M * M);
+
+    // memory size in BYTE per data block based on the following bufferes:
+    // Cnbuf, Wnbuf, and Dbuf
+    int byte_per_block =  16 + 16 + 16;
+    
+    int block_reg, block_fin;
+    int nblocks_reg;
+    int nranks_reg, nranks_sem, nranks_fin;
+    int nrounds_reg, nrounds;
+    MPI_Comm comm_reg, comm_sem, comm_fin;
+
+    round_manage_cpu(myid, nprocs,
+                     size, byte_per_block,
+                     block_reg, block_fin, nblocks_reg, 
+                     nranks_reg, nranks_sem, nranks_fin,
+                     nrounds_reg, nrounds,
+                     comm_reg, comm_sem, comm_fin);
+    // root extends the "bufall" to the largest size:
+    if (myid == root){
+        Cnbufall.resize(block_reg * nprocs);
+        Wnbufall.resize(block_reg * nprocs);
+        Dbufall.resize(block_reg  * nprocs);
+    }
+    // root resets rhos: (uncecessary? just in case)
+    //if (myid == root){
+    //    std::fill(rhos.begin(), rhos.end(), std::complex<double>(0, 0));
+    //}
+    // every rank resets rhosbuf:
+    std::fill(rhosbuf.begin(), rhosbuf.end(), std::complex<double>(0, 0));
+
+    int i0 = 0; // the start position of C[n] or C[n-1] 
+    for (int round = 0; round < nrounds; ++round){
+        MPI_Comm comm;
+        int block;
+        // set communicator and block size for the round:
+        if (round < nrounds_reg) {
+            comm  = comm_reg;
+            block = block_reg;
+        }
+        else if (round == nrounds - 1 && nranks_fin != 0) {
+            comm  = comm_fin;
+            block = block_fin;
+        }
+        else {
+            comm  = comm_sem;
+            block = block_reg;
+        }
+        if (comm != MPI_COMM_NULL) {
+            // ========= process exclusive for comm BEGIN =========
+            int rank, nranks;
+            // get info about comm:
+            MPI_Comm_rank(comm, &rank);
+            MPI_Comm_size(comm, &nranks);
+
+            // resize buffers:
+            if (round == 0 || block != block_reg){    
+                Cnbuf.resize(block);
+                Wnbuf.resize(block);
+                Dbuf.resize(block);
+            }
+            // root transferes data from Cn, Wn and D to buffers of each rank:
+            if (rank == root) {
+                std::copy(Cn.begin() + i0, Cn.begin() + i0 + block * nranks, Cnbufall.begin());
+                std::copy(Wn.begin() + i0, Wn.begin() + i0 + block * nranks, Wnbufall.begin());
+                std::copy(D.begin()  + i0, D.begin()  + i0 + block * nranks, Dbufall.begin());
+            }
+            // root scatters Cnbufall, Wnbufall, and Dbufall to all ranks in comm:
+            MPI_Scatter(Cnbufall.data(), block, MPI_UNSIGNED_LONG_LONG,
+                        Cnbuf.data(),    block, MPI_UNSIGNED_LONG_LONG, root, comm);
+            MPI_Scatter(Wnbufall.data(), block, MPI_C_DOUBLE_COMPLEX,
+                        Wnbuf.data(),    block, MPI_C_DOUBLE_COMPLEX,   root, comm);
+            MPI_Scatter(Dbufall.data(),  block, MPI_C_DOUBLE_COMPLEX,
+                        Dbuf.data(),     block, MPI_C_DOUBLE_COMPLEX,   root, comm);
+
+            // each rank computes rhosbuf:
+            if (0 < N && N < Dkmax + 1){
+                auto L = 2 * n;
+                for (int i = i0; i < block; i++){
+                    auto aln = Cnbuf[i];   // \alpha_n \in C_n
+                    auto arg = num2arg(aln, M, L);
+                    auto m1 = arg[L - 2];
+                    auto m2 = arg[L - 1];
+                    auto m = m1 * M + m2;
+                    auto rho  = Wnbuf[i] * Dbuf[i];
+                    rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);
+                    rhosbuf[m] += rho;
+                }
+            }
+            else if (N >= Dkmax + 1){
+                auto L = 2 * (n - 1);
+                for (int i = i0; i < block; i++){
+                    auto aln = Cnbuf[i];   // \alpha_{n-1} \in C_{n-1}
+                    for (int m1 = 0; m1 < M; ++m1){
+                        for (int m2 = 0; m2 < M; ++m2){
+                            auto arg = num2arg(aln, M, L);
+                            auto m = m1 * M + m2;
+                            arg.push_back(m1); // m1 = s_n^+
+                            arg.push_back(m2); // m2 = s_n^-
+                            auto rho = Wnbuf[i] * Dbuf[i];
+                            rho *= R(n, arg, U, s, gm0, gm1, gm2, gm3, gm4);
+                            rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);
+                            rhosbuf[m] += rho;
+                        }
+                    }
+                }
+            }
+            i0 += block * nranks;
+            // ========= process exclusive for comm END =========
+        } // comm block ends
+    } // round loop ends 
+    // finally, root gets all rhosbuf reduced to rhos of root:
+    MPI_Reduce(rhosbuf.data(), rhos.data(), M * M, MPI_C_DOUBLE_COMPLEX, MPI_SUM, root, MPI_COMM_WORLD);
+}
 
 //=======================  EOF  ================================================
