@@ -40,7 +40,7 @@ $ sudo apt install openmpi-bin
 ```
 
 The installed GCC is version 10.2 on my platform (macOS), so I represent the C++ compiler by ```g++-10``` in the following instructions. 
-If your GCC is differnt from version 10, **edit ```CXX = g++-10``` in Makefile** to the right version (e.g., ```CXX = g++-9``` for version 9). 
+If your GCC is differnt from version 10, **chage ```g++-10``` in the following and also ```CXX = g++-10``` in Makefile** to the right version (e.g., ```CXX = g++-9``` for version 9). 
 For the complete installation, run the following in the root directory (where Makefile is present):
 
 ```
