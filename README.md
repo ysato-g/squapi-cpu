@@ -12,7 +12,7 @@ The algorithm has been implemented on a GPU accelerated cluster and demonstraing
 ## System Requirement
 **squpai-cpu** is a set of command-line tools (executables).
 It requires C++ compiler to build and Python 3 to generate necessary input files.
-The squapi-cpu executables and the accompanying Python script have been developed using **macOS** 10.14 (Mojave) and tested on **Linux** CenOS 7.6.
+The squapi-cpu executables and the accompanying Python script have been developed using **macOS** 10.14 (Mojave) and tested on **Linux** CenOS 7 and Ubuntu Desktop 20.
 The essential requirements for all platforms are as follows:
 
     * Any C++ compiler supporting C++11 to build squapi, the serial version.  
@@ -32,8 +32,15 @@ $ brew install gcc
 $ brew install open-mpi
 ```
 
-This has installed GCC version 10.2 on my platform, so I represent the C++ compiler by ```g++-10``` in the following instructions. 
-If your GCC is differnt from version 10, edit ```CXX = g++-10``` in Makefile to the right version. 
+For **Ubuntu**, GCC and Open MPI can be installed by 
+
+```
+$ sudo apt install gcc g++ make
+$ sudo apt install openmpi-bin
+```
+
+The installed GCC is version 10.2 on my platform (macOS), so I represent the C++ compiler by ```g++-10``` in the following instructions. 
+If your GCC is differnt from version 10, **edit ```CXX = g++-10``` in Makefile** to the right version (e.g., ```CXX = g++-9``` for version 9). 
 For the complete installation, run the following in the root directory (where Makefile is present):
 
 ```
