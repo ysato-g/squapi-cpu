@@ -4,7 +4,7 @@ Project: S-QuAPI for CPU
 Date Created : 8/30/20
 Date Last mod: 9/2/20
 Author: Yoshihiro Sato
-Description: Exciton dynamics of the pigment-protein dimer using S-QuAPI.
+Description: Exciton dynamics of a pigment-protein dimer using S-QuAPI.
              The default parameters are set to reproduces Fig.2 
              of New Journal of Physics 13 (2011) 063040.
              The curves in graph are extraporated curves 
