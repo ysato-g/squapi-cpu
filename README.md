@@ -64,12 +64,12 @@ will compile and install the serial and OpenMP versions, and the MPI version wil
 If only the serial version is needed, then just running
 
 ```
-$ g++-10 -I include -std=c++11 src/sqmodule.cpp src/squapi.cpp -o bin/squapi
+$ g++ -I include -std=c++11 src/sqmodule.cpp src/squapi.cpp -o bin/squapi
 $ cp src/squapi.py bin 
 ```
 
 will be enough.
-Here ```g++-10``` needs to be changed, if not GCC ver. 10, to the command for your compiler.
+Here ```g++``` needs to be changed, if not GCC, to the command for your compiler.
 
 
 
