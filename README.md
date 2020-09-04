@@ -98,7 +98,7 @@ $ python3 benchmark3.py
 ```
 
 which makes a graph resembling Figure 4 of the same reference.
-For a detailed set-by-step instruction, see the JupyterLab notebook examples/how_to_use_squapi.ipynb:
+For a detailed step-by-step instruction, see the JupyterLab notebook examples/how_to_use_squapi.ipynb:
 
 ```
 $ cd ..
