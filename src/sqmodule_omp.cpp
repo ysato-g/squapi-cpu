@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.1.0 (x.1.x OpenMP)
  * Date Created : 8/15/20
- * Date Last mod: 8/30/20
+ * Date Last mod: 9/7/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_omp.cpp squapi_cont_omp.cpp 
  * Notes:
@@ -56,15 +56,15 @@ void getCW_omp(double theta,
     // *** n = 0: insert empty std::vectors for n = 0 
     Cn.clear();
     Wn.clear();
-    C.push_back(Cn);
-    W.push_back(Wn);
+    C.emplace_back(Cn);
+    W.emplace_back(Wn);
     // *** n = 1:
     Cn.resize(M * M);
     Wn.resize(M * M);
     std::iota(Cn.begin(), Cn.end(), 0); // C1 = {0, 1, 2, ..., M * M -1}
     std::fill(Wn.begin(), Wn.end(), std::complex<double>(1, 0));
-    C.push_back(Cn);
-    W.push_back(Wn);
+    C.emplace_back(Cn);
+    W.emplace_back(Wn);
     std::cout << "size of C1 = " << Cn.size() << std::endl;
     // *** n > 1:
     for(int n = 2; n < nmax + 1; n++){
@@ -91,21 +91,21 @@ void getCW_omp(double theta,
                         auto arg = num2arg(aln, M, L);
                         auto wn  = wn_1 * R(n, arg, U, s, gm0, gm1, gm2, gm3, gm4);
                         if(abs(wn) >= theta){
-                            Cnbuf.push_back(aln);
-                            Wnbuf.push_back(wn);
+                            Cnbuf.emplace_back(aln);
+                            Wnbuf.emplace_back(wn);
                         }
                     }
                 }
                 #pragma omp ordered
                 {
-                    for(auto aln: Cnbuf){ Cn.push_back(aln); }
-                    for(auto wn:  Wnbuf){ Wn.push_back(wn);  }
+                    for(auto aln: Cnbuf){ Cn.emplace_back(aln); }
+                    for(auto wn:  Wnbuf){ Wn.emplace_back(wn);  }
                 }
             }
         }
         // --- store Cn and Wn into C and W
-        C.push_back(Cn);
-        W.push_back(Wn);
+        C.emplace_back(Cn);
+        W.emplace_back(Wn);
         std::cout << "size of C" << n << " = " << C[n].size()
                   << "  lap time = " << omp_get_wtime() - time0 << " sec" << std::endl;
     }
@@ -177,8 +177,8 @@ void getD0_omp(int N,
         auto aln_1 = Cn_1[i];
         auto arg = num2arg(aln_1, M, L - 2);
         // currently, arg => \alpha_{n-1} = \{s_1^\pm, s_2\pm, \cdots, s_{n-1}^\pm \}
-        arg.push_front(0);
-        arg.push_front(0); 
+        arg.emplace_front(0);
+        arg.emplace_front(0); 
         // now arg => \{s_0^\pm, \alpha_{n-1}\} with dummy values for s_0^\pm
         for(int m0 = 0; m0 < M; m0++){
             for(int m1 = 0; m1 < M; m1++){
@@ -232,8 +232,8 @@ void getD1_omp(std::vector<unsigned long long>& Cn_1,
         auto aln_1 = Cn_1[i];
         auto arg = num2arg(aln_1, M, L - 2);  
         // currently, arg = \{s_1^\pm, s_2\pm, \cdots, s_{Dkmax}^\pm \}
-        arg.push_front(0);
-        arg.push_front(0);     
+        arg.emplace_front(0);
+        arg.emplace_front(0);     
         // now arg = \{s_0^\pm, s_1^\pm, \cdots, s_{Dkmax}^\pm \} with dummy values for s_0^\pm
         for(int m0 = 0; m0 < M; m0++){
             for(int m1 = 0; m1 < M; m1++){
@@ -316,8 +316,8 @@ void getrhos_omp(int N,
                     for (int m2 = 0; m2 < M; ++m2){
                         auto arg = num2arg(aln, M, L);
                         auto m = m1 * M + m2;
-                        arg.push_back(m1); // m1 = s_n^+
-                        arg.push_back(m2); // m2 = s_n^-
+                        arg.emplace_back(m1); // m1 = s_n^+
+                        arg.emplace_back(m2); // m2 = s_n^-
                         auto rho = Wn[i] * D[i];
                         rho *= R(n, arg, U, s, gm0, gm1, gm2, gm3, gm4);
                         rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);  
