@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.2.1 (MPI with some OpenMP for multi-node system)
+ * version: 0.2.2 (MPI with some OpenMP for multi-node system)
  * Date Created : 8/21/20
- * Date Last mod: 9/2/20
+ * Date Last mod: 9/9/20
  * Author: Yoshihiro Sato
  * Description: the main function of genrhos 
  * Usage: $ mpirun -np (nprocs) genrhos system.dat init.dat (Nmax) (theta)
@@ -12,6 +12,7 @@
  *      - Based on C++11
  *      - Develped using gcc 10.2.0 and Open MPI 4.0.4 on MacOS 10.14 
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
+ *      - Supports Dkmax = 0
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -106,17 +107,18 @@ int main(int argc, char* argv[])
     if (myid == root){
         std::cout << "----- generate rhos --------------------" << std::endl;
     }
-    
-
+    std::vector<std::complex<double>> rhos(M * M);
     // ***** Start time evolution **************
     for (int N = 0; N < Nmax + 1; N++){
-        std::vector<std::complex<double>> rhos(M * M);
-        int n;
         double time1 = MPI_Wtime(); // for time measurement using MPI 
+        int n;
         if (N == 0){
             if (myid == root) rhos = rhos0;
         }
-        else if (N > 0 && N < Dkmax + 1){
+        else if (N > 0 && Dkmax == 0){
+            getrhosK(M, U, rhos);
+        }
+        else if (N > 0 && N < Dkmax + 1 && Dkmax > 0){
             /******************* STEP 2 **************************/
             n = N;
             getD0_mpi(N, myid, nprocs, root, C[n], rhos0, U, s, gm0, gm1, gm2, gm3, gm4, D);
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
             // below full MPI version (not so fast):
             //getrhos_mpi(N, myid, nprocs, root, U, C[n], W[n], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
-        else if (N == Dkmax + 1){
+        else if (N == Dkmax + 1 && Dkmax > 0){
             /******************* STEP 3 **************************/
             n = Dkmax + 1;
             getD0_mpi(N, myid, nprocs, root, C[n-1], rhos0, U, s, gm0, gm1, gm2, gm3, gm4, D);

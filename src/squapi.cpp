@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.0
+ * version: 0.0.1
  * Date Created : 8/15/20
- * Date Last mod: 8/26/20
+ * Date Last mod: 9/9/20
  * Author: Yoshihiro Sato
  * Description: the main function of genrhos 
  * Compile: $g++ -std=c++11 squapi.cpp sqmodule.cpp -o squapi 
@@ -13,6 +13,7 @@
  *      - Based on C++11
  *      - Develped using MacOS 10.14 and Xcode 11.3 
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
+ *      - Supports Dkmax = 0
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -77,20 +78,23 @@ int main(int argc, char* argv[])
 
     // Generate the density matrix by the time evolution:
     std::cout << "----- generate rhos --------------------" << std::endl;
+    std::vector<std::complex<double>> rhos(M * M);
     for (int N = 0; N < Nmax + 1; N++){
-        int n;
-        std::vector<std::complex<double>> rhos(M * M);
         clock_t time1 = clock(); // for time measurement
+        int n;
         if (N == 0){
             rhos = rhos0;
         }
-        else if (N > 0 && N < Dkmax + 1){
+        else if (N > 0 && Dkmax == 0){
+            getrhosK(M, U, rhos);
+        }
+        else if (N > 0 && N < Dkmax + 1 && Dkmax > 0){
             /******************* STEP 2 **************************/
             n = N;
             getD0(N, C[n], rhos0, U, s, gm0, gm1, gm2, gm3, gm4, D);
             getrhos(N, U, C[n], W[n], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
-        else if (N == Dkmax + 1){
+        else if (N == Dkmax + 1 && Dkmax > 0){
             /******************* STEP 3 **************************/
             n = Dkmax + 1;
             getD0(N, C[n-1], rhos0, U, s, gm0, gm1, gm2, gm3, gm4, D);

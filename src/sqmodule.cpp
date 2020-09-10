@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.0 (x.0.x serial)
+ * version: 0.0.1 (x.0.x serial)
  * Date Created : 8/15/20
- * Date Last mod: 9/7/20
+ * Date Last mod: 9/9/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi.cpp, squapi_omp.cpp, squapi_mpi.cpp
  *              and  squapi_cont_xxx.cpp
@@ -13,6 +13,7 @@
  *      - Based on C++11
  *      - Develped using MacOS 10.14 and Xcode 11.3
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
+ *      - Supports Dkmax=0
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -186,7 +187,7 @@ void getU(double Dt,
                 auto e  = std::exp(cj * energy[m] * Dt / HBAR);
                 u += eket[m * M + m0] * e * std::conj(eket[m * M + m1]);
             }
-            //U[m0][m1] = u;
+            //U[m0][m1] = u, i.e., m0 = row, m1 = col
             U[m0 * M  + m1] = u;
         }
     }
@@ -435,7 +436,7 @@ void getrhos(int N,
             auto arg = num2arg(aln, M, L);
             auto m1 = arg[L - 2];
             auto m2 = arg[L - 1];
-            auto m = m1 * M + m2;
+            auto m = m1 * M + m2; // m1 = row, m2 = col
             auto rho  = Wn[i] * D[i];
             rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);  
             rhos[m] += rho;
@@ -448,7 +449,7 @@ void getrhos(int N,
             for (int m1 = 0; m1 < M; ++m1){
                 for (int m2 = 0; m2 < M; ++m2){
                     auto arg = num2arg(aln, M, L);
-                    auto m = m1 * M + m2;
+                    auto m = m1 * M + m2; // m1 = row, m2 = col
                     arg.emplace_back(m1); // m1 = s_n^+
                     arg.emplace_back(m2); // m2 = s_n^-
                     auto rho = Wn[i] * D[i];
@@ -460,6 +461,34 @@ void getrhos(int N,
         }
     }
 }
+
+void getrhosK(int M, 
+              std::vector<std::complex<double>>& U, 
+              std::vector<std::complex<double>>& rhos)
+{
+    /**********************************************************
+     *  Computes rhos for Dkmax = 0, using the bare 
+     *  propagator K of Eq.(5)
+     *********************************************************/
+    // copy rhos to rhosprev ("previous")
+    auto rhosprev = rhos;
+    // reset rhos:
+    std::fill(rhos.begin(), rhos.end(), std::complex<double>(0, 0));
+    for (int m3 = 0; m3 < M; ++m3){
+        for (int m2 = 0; m2 < M; ++m2) {
+            auto m = m2 * M + m3; // m2 = row, m3 = col
+            for (int m1 = 0; m1 < M; ++m1) {
+                for (int m0 = 0; m0 < M; ++m0){
+                    // construct the free propagator:
+                    auto K  = U[m2 * M + m0] * std::conj(U[m3 * M + m1]);
+                    rhos[m] += K * rhosprev[m0 * M + m1];
+                }
+            }
+        }
+    }
+}
+
+
 
 double trace (std::vector<std::complex<double>>& rhos)
 {
