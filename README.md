@@ -24,8 +24,8 @@ The current version of squapi_mpi has been develped using [Open MPI](https://www
 Also, squapi_omp usually outperforms squapi_mpi on a single node, so MPI would not be necessary for a multi-core shared-memory platform. 
 
 ## Installation 
-For **macOS**, GCC and Open MPI can readily be installed with [Homebrew](https://github.com/Homebrew).
-After installing [Xcode](https://developer.apple.com/xcode/) and Homebrew, 
+For **macOS**, GCC and Open MPI can readily be installed with [Homebrew](https://brew.sh/).
+After installing Homebrew,
 
 ```
 $ brew install gcc  
