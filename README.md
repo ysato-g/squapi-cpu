@@ -25,7 +25,7 @@ Also, squapi_omp usually outperforms squapi_mpi on a single node, so MPI would n
 
 ## Installation 
 For **macOS**, GCC and Open MPI can readily be installed with [Homebrew](https://brew.sh/).
-After installing Homebrew,
+After installing Homebrew, run the following:
 
 ```
 $ brew install gcc  
