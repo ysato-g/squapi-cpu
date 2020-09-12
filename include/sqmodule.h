@@ -101,6 +101,10 @@ void getrhos(int N,
              std::vector<std::vector<std::complex<double>>>& gm4,
              std::vector<std::complex<double>>& rhos);
 
+void getrhosK(int M,
+              std::vector<std::complex<double>>& U,
+              std::vector<std::complex<double>>& rhos);
+
 double trace (std::vector<std::complex<double>>& rhos); 
 
 void save_rhos (int N, std::vector<std::complex<double>>& rhos);
