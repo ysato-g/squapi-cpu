@@ -47,7 +47,7 @@ For the complete installation, run the following in the root directory (where Ma
 $ export OMPI_CXX=g++-10
 $ make
 ```
-This will compile and install all the squapi-cpu executables (squapi, squapi_omp, squapi_cont_omp, squapi_mpi, and squapi_cont_mpi) and the accompaying Python 3 sript (squapi.py) into the bin directory. 
+This will compile and install all the squapi-cpu executables (squapi, squapi_omp, and squapi_mpi) and the accompaying Python 3 sript (squapi.py) into the bin directory. 
 You can clean up the root directory by
 
 ```

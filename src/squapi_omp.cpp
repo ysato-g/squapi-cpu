@@ -3,15 +3,17 @@
  * Major version: 0
  * version: 0.1.1 (OpenMP, made for multi-core single node)
  * Date Created : 8/15/20
- * Date Last mod: 9/9/20
+ * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
  * Description: the main function of squapi_omp 
+ * Usage: $ squapi_omp system.dat init.dat (Nmax) (theta) (--cont)
  * Notes: 
  *      - Functions used in this program are written in sqmodule.cpp and sqmodule_omp.cpp
  *      - Based on C++11
  *      - Develped using gcc 10.2.0 on MacOS 10.14 
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
  *      - Supports Dkmax = 0
+ *      - Takes "--cont" option for continuation to larger Nmax value
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -45,12 +47,24 @@ int main(int argc, char* argv[])
     std::vector<std::vector<std::complex<double>>> gm4;
     std::vector<std::complex<double>> rhos0;
     std::vector<std::complex<double>> D;
-    int Nmax, Dkmax, M, N0; // N0 is not used in genrhos_omp.cpp
+    int Nmax, Dkmax, M;
     double Dt, theta;
 
     // load data from files and store them in the S-QuAPI parameters: 
     load_data(argv, energy, eket, U, s, 
-              gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
+              gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt, theta);
+
+    // set N0 value for the N loop
+    int N0 = -1;
+    // search if argv contains "--cont"
+    for (auto i = 0; i < argc; ++i){
+        std::string arg = argv[i]; 
+        if (arg == "--cont" || arg == "-c"){
+            // overwrite N0, theta, and D by those in D.dat
+            load_D("D.dat", N0, theta, D);
+            checkdata("rhos.dat", N0, Nmax, Dkmax);
+        }
+    }
 
     // --- generate U for the propagators
     getU(Dt, energy, eket, U);  
@@ -74,17 +88,19 @@ int main(int argc, char* argv[])
     
     // --- generate Cnmap ------------
     std::cout << "----- generate Cnmap -------------------" << std::endl;
+    double time1 = omp_get_wtime(); // for time measurement using OMP
     std::unordered_map<unsigned long long, int> Cnmap;
     getCnmap(C[Dkmax], Cnmap);
     //getCnmap_omp(C[Dkmax], Cnmap); // very slow. for devel only 
+    std::cout << "  lap time = " << omp_get_wtime() - time1 << " sec" << std::endl;
 
     // -------- Generate rhos ---------------------------------------
     std::cout << "----- generate rhos --------------------" << std::endl;
 
     // ***** Start time evolution **************
     std::vector<std::complex<double>> rhos(M * M);
-    for (int N = 0; N < Nmax + 1; N++){
-        double time1 = omp_get_wtime(); // for time measurement using OMP
+    for (int N = N0 + 1; N < Nmax + 1; N++){
+        time1 = omp_get_wtime(); // reset time1 for time measurement using OMP
         int n;
         if (N == 0){
             rhos = rhos0;
@@ -111,7 +127,7 @@ int main(int argc, char* argv[])
             getrhos_omp(N, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
         // *** write N and rhos into rhos.dat ***
-        save_rhos(N, rhos);
+        save_rhos(N, rhos, "rhos.dat");
 
         std::cout << "N = " << N << " of " << Nmax;
         std::cout << " lap time = " << omp_get_wtime() - time1 << " sec"; 
@@ -121,7 +137,7 @@ int main(int argc, char* argv[])
         if (N == Nmax){
             double time2 = omp_get_wtime();
             std::cout << "----- saving D to D.dat ----------------" << std::endl;
-            save_D (N, theta, D);
+            save_D (N, theta, D, "D.dat");
             std::cout << "    lap time = " << omp_get_wtime() - time2 << " sec" << std::endl;
             /***********************************************
             // store backup files in zip (optional)

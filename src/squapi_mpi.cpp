@@ -3,16 +3,17 @@
  * Major version: 0
  * version: 0.2.2 (MPI with some OpenMP for multi-node system)
  * Date Created : 8/21/20
- * Date Last mod: 9/9/20
+ * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
- * Description: the main function of genrhos 
- * Usage: $ mpirun -np (nprocs) genrhos system.dat init.dat (Nmax) (theta)
+ * Description: the main function of squapi_mpi 
+ * Usage: $ mpiexec -np (nprocs) squapi_mpi system.dat init.dat (Nmax) (theta) (--cont)
  * Notes: 
  *      - Functions used in this program are written in sqmodule.cpp sqmodule_xxx.cpp
  *      - Based on C++11
  *      - Develped using gcc 10.2.0 and Open MPI 4.0.4 on MacOS 10.14 
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
  *      - Supports Dkmax = 0
+ *      - Takes "--cont" option for continuation to larger Nmax value
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -29,7 +30,6 @@
 #include "sqmodule_mpi.h"
 #include "sysconf.h"
 #include "cont.h"
-
 
 
 int main(int argc, char* argv[])
@@ -59,12 +59,28 @@ int main(int argc, char* argv[])
     std::vector<std::vector<std::complex<double>>> gm4;
     std::vector<std::complex<double>> rhos0;
     std::vector<std::complex<double>> D;
-    int Nmax, Dkmax, M, N0; // N0 not used in genrhos.cpp
+    int Nmax, Dkmax, M;
     double Dt, theta;
-
+    
     // load data from files and store them in the S-QuAPI parameters: 
     load_data(argv, energy, eket, U, s, 
               gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
+
+    // set N0 value for the N loop
+    int N0 = -1;
+    // root searches if argv contains "--cont"
+    if (myid == root){
+        for (auto i = 0; i < argc; ++i){
+            std::string arg = argv[i]; 
+            if (arg == "--cont" || arg == "-c"){
+                // overwrite N0, theta, and D by those in D.dat
+                load_D("D.dat", N0, theta, D);
+                checkdata("rhos.dat", N0, Nmax, Dkmax);
+            }       
+        } 
+    }
+    // root broadcasts N0 to all ranks: 
+    MPI_Bcast(&N0, 1, MPI_INT, root, MPI_COMM_WORLD);
 
     // --- generate U for the propagators
     getU(Dt, energy, eket, U);  
@@ -97,11 +113,15 @@ int main(int argc, char* argv[])
     MPI_Bcast(CDkmax.data(), size, MPI_UNSIGNED_LONG_LONG, root, MPI_COMM_WORLD);
 
     // generate Cnmap:
+    double time1 = MPI_Wtime(); // for time measurement using MPI 
     if (myid == root){
         std::cout << "----- generate Cnmap -------------------" << std::endl;
     }
     std::unordered_map<unsigned long long, int> Cnmap;
     getCnmap(CDkmax, Cnmap); // serial version
+    if (myid == root){
+        std::cout << "  lap time = " << MPI_Wtime() - time1 << " sec" << std::endl;
+    }
     
     // -------- Generate rhos ---------------------------------------
     if (myid == root){
@@ -109,8 +129,8 @@ int main(int argc, char* argv[])
     }
     std::vector<std::complex<double>> rhos(M * M);
     // ***** Start time evolution **************
-    for (int N = 0; N < Nmax + 1; N++){
-        double time1 = MPI_Wtime(); // for time measurement using MPI 
+    for (int N = N0 + 1; N < Nmax + 1; N++){
+        time1 = MPI_Wtime(); // reset time1 for time measurement using MPI 
         int n;
         if (N == 0){
             if (myid == root) rhos = rhos0;
@@ -150,7 +170,7 @@ int main(int argc, char* argv[])
         }
         // *** write N and rhos into rhos.dat ***
         if (myid == root){
-            save_rhos(N, rhos);
+            save_rhos(N, rhos, "rhos.dat");
             std::cout << "N = " << N << " of " << Nmax;
             std::cout << " lap time = " << MPI_Wtime() - time1 << " sec"; 
             std::cout << " tr = " << trace(rhos) << std::endl;
@@ -158,7 +178,7 @@ int main(int argc, char* argv[])
             if (N == Nmax){
                 double time2 = MPI_Wtime();
                 std::cout << "----- saving D to D.dat ----------------" << std::endl;
-                save_D (N, theta, D);
+                save_D (N, theta, D, "D.dat");
                 std::cout << "    lap time = " << MPI_Wtime() - time2 << " sec" << std::endl;
                 /***********************************************
                 // store backup files in zip (optional)

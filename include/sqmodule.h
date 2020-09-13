@@ -107,6 +107,6 @@ void getrhosK(int M,
 
 double trace (std::vector<std::complex<double>>& rhos); 
 
-void save_rhos (int N, std::vector<std::complex<double>>& rhos);
+void save_rhos (int N, std::vector<std::complex<double>>& rhos, std::string filename);
 
 //=======================  EOF  ================================================

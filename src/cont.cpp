@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.0 (x.0.x serial)
+ * version: 0.0.1 (x.0.x serial)
  * Date Created : 8/23/20
- * Date Last mod: 8/26/20
+ * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_xxx.cpp and squapi_xxx.cpp 
  * Notes:
@@ -19,13 +19,13 @@
 #include <string>
 
 // ************************************* Functions  *****************************************
-void save_D (int N, double theta, std::vector<std::complex<double>>& D) 
+void save_D (int N, double theta, std::vector<std::complex<double>>& D, std::string filename) 
 {
     /*************************************************
-     * store D to a file, D.dat, for regenrhos
+     * store D to a file, D.dat, for squapi_cont_xxx
      *************************************************/
     std::ofstream fout;
-    fout.open("D.dat");
+    fout.open(filename); // filename is "D.dat"
     int size = (int) D.size();
     // record N and size first:
     fout << N     << std::endl;
@@ -42,12 +42,14 @@ void save_D (int N, double theta, std::vector<std::complex<double>>& D)
     fout.close(); 
 }
 
-// ******** functions for regenrhos only ***************
-// --- load D, N0, and theta from D.dat
-void load_D (int& N0, double& theta, std::vector<std::complex<double>>& D)
+
+void load_D (std::string filename, int& N0, double& theta, std::vector<std::complex<double>>& D)
 {
-    std::ifstream fin("D.dat");  // open the data file
-    // --- read D.dat and store the data into N0, size, and D ---
+    /*************************************************
+     * load D, N0, and theta from D.dat
+     *************************************************/
+    std::ifstream fin(filename); // filename is D.dat
+    // read D.dat and store the data into N0, size, and D:
     if(!fin){
         std::cout << "---------------------------"    << std::endl;
         std::cout << "ERROR: Cannot open D.dat   "    << std::endl;
@@ -72,18 +74,21 @@ void load_D (int& N0, double& theta, std::vector<std::complex<double>>& D)
     fin.close();
 }
 
-bool checkN0 (std::string filename, int N0)
+
+void checkdata (std::string filename, int N0, int Nmax, int Dkmax)
 {
-    // ***** read rhos.dat and check N0 ******
-    std::ifstream fin(filename);  // open the data file
+    /*************************************************
+     * read rhos.dat and check consistency and 
+     * compatibility in the squapi parameters 
+     *************************************************/
+    std::ifstream fin(filename); // filename = rhos.dat
     if(!fin){
         std::cout << "---------------------------"    << std::endl;
         std::cout << "ERROR: Cannot open " + filename << std::endl;
         std::cout << "---------------------------"    << std::endl;
-        return false;
+        exit(1); 
     }
-
-    // --- scan the entire file and crop out the last line of it
+    // scan the entire file and crop out the last line of it:
     std::string lastline;
     //fin.seekg(0, std::ios::beg); // go to the beginning of the file (just in case)
     while (true){
@@ -93,22 +98,29 @@ bool checkN0 (std::string filename, int N0)
         lastline = buf;
     }
     fin.close();
-    // --- extract N0 from the last line
-    int delim = lastline.find(",");            // delimiter before the end of info
-    int N = stod( lastline.substr(0, delim) ); // extract string from the beginning to ','
-    if (N == N0){
-        std::cout << "----- check consistency in N0 --------" << std::endl;
+    // extract N0 from the last line:
+    int delim = lastline.find(",");               // delimiter before the end of info
+    int N = std::stoi(lastline.substr(0, delim)); // extract string from the beginning to ','
+    if (N != N0){
+        std::cout << "----------------------------------------" << std::endl;
+        std::cout << "**** ERROR: INCONSITENT N0 VALUES ******" << std::endl;
         std::cout << "  N0 in D.dat    = " << N0 << std::endl;
         std::cout << "  N0 in rhos.dat = " << N  << std::endl;
-        return true;
+        std::cout << "----------------------------------------" << std::endl;
+        exit(1); 
     }
-    else{
-        std::cout << "**** FAILED! N0 does not match: ****" << std::endl;
-        std::cout << "  N0 in D.dat    = " << N0 << std::endl;
-        std::cout << "  N0 in rhos.dat = " << N  << std::endl;
-        return false;
+    if (N0 >= Nmax){
+        std::cout << "----------------------------------------" << std::endl;
+        std::cout << "******* Nmax <= N0: nothing to do ******" << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
+        exit(1); 
+    }
+    if (Dkmax == 0){
+        std::cout << "----------------------------------------" << std::endl;
+        std::cout << "****** DOES NOT SUPPORT Dkmax = 0 ******" << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
+        exit(1);
     }
 }
-
 
 //=======================  EOF  ================================================

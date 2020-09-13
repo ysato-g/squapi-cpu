@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.0.1 (x.0.x serial)
  * Date Created : 8/15/20
- * Date Last mod: 9/9/20
+ * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi.cpp, squapi_omp.cpp, squapi_mpi.cpp
  *              and  squapi_cont_xxx.cpp
@@ -275,16 +275,12 @@ void getCnmap(std::vector<unsigned long long>& Cn,
      *   Serial version of getCnmap.
      *   Generates Cnmap for n = Dkmax
      *****************************************************/
-    clock_t time0 = clock(); // for time measurement
     auto size = Cn.size();
     for(int i = 0; i < size; i++){
         auto key = Cn[i];
         auto val = i;
         Cnmap[key] = val;
     }
-    std::cout << "  lap time = " 
-              << (double)(clock() - time0) / CLOCKS_PER_SEC 
-              << " sec" << std::endl;
 }
 
 
@@ -511,7 +507,7 @@ double trace (std::vector<std::complex<double>>& rhos)
 }
 
 
-void save_rhos (int N, std::vector<std::complex<double>>& rhos)
+void save_rhos (int N, std::vector<std::complex<double>>& rhos, std::string filename)
 {
     /*************************************
      *  Saves rhos array as rhos.dat 
@@ -520,13 +516,13 @@ void save_rhos (int N, std::vector<std::complex<double>>& rhos)
     std::ofstream fout;
     if (N == 0){
         // open the file in 'overwirte' mode:
-        fout.open("rhos.dat");
+        fout.open(filename); // filename is "rhos.dat"
         // file formatted for numpy loadtxt:
         fout<< "# N,  rhos(N)" << std::endl;
     }
     else{
         // open the file in 'apped' mode:
-        fout.open("rhos.dat", std::ios::app);
+        fout.open(filename, std::ios::app);
     }
     for(int m = 0; m < M2; ++m){
         auto x = rhos[m].real();

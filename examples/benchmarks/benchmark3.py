@@ -86,7 +86,6 @@ if squapi == True:
     prog_list = output.decode('UTF-8').splitlines()
     # set up binary program based on selection:
     prog = 'squapi'
-    if cont == True: prog += '_cont'
     if mode != 'ser': prog += '_' + mode
     cmd = 'echo running with ' + prog
     subprocess.call(cmd, shell=True, executable='/bin/bash')
@@ -95,6 +94,7 @@ if squapi == True:
         cmd = bin_dir + prog + ' system.dat init.dat ' + str(Nmax) + ' ' + str(theta)
         if mode == 'mpi':
             cmd = 'mpiexec ' + cmd
+        if cont == True: cmd += ' --cont'
         subprocess.call(cmd, shell=True, executable='/bin/bash')
     else:
         print('**CANNOT RUN: ' + prog + ' DOES NOT EXIST IN ' + bin_dir + ' **')

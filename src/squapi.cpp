@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.0.1
  * Date Created : 8/15/20
- * Date Last mod: 9/9/20
+ * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
  * Description: the main function of genrhos 
  * Compile: $g++ -std=c++11 squapi.cpp sqmodule.cpp -o squapi 
@@ -73,14 +73,16 @@ int main(int argc, char* argv[])
     
     // Generate the key-value map for searching D:
     std::cout << "----- generate Cnmap -------------------" << std::endl;
+    clock_t time1 = clock(); // for time measurement
     std::unordered_map<unsigned long long, int> Cnmap;
     getCnmap(C[Dkmax], Cnmap);
+    std::cout << "  lap time = " << (double)(clock() - time1) / CLOCKS_PER_SEC << " sec" << std::endl;
 
     // Generate the density matrix by the time evolution:
     std::cout << "----- generate rhos --------------------" << std::endl;
     std::vector<std::complex<double>> rhos(M * M);
     for (int N = 0; N < Nmax + 1; N++){
-        clock_t time1 = clock(); // for time measurement
+        time1 = clock(); // reset time1 for time measurement
         int n;
         if (N == 0){
             rhos = rhos0;
@@ -107,7 +109,7 @@ int main(int argc, char* argv[])
             getrhos(N, U, C[n-1], W[n-1], D, s, gm0, gm1, gm2, gm3, gm4, rhos);
         }
         // Write N and rhos into rhos.dat:
-        save_rhos(N, rhos);
+        save_rhos(N, rhos, "rhos.dat");
 
         std::cout << "N = " << N << " of " << Nmax;
         std::cout << " lap time = " << (double)(clock() - time1) / CLOCKS_PER_SEC  << " sec"; 
