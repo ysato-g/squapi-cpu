@@ -2,7 +2,7 @@
 # Project: S-QuAPI for CPU
 # Makefile for squapi-cpu
 # Date Created : 9/1/20
-# Date Last mod: 9/10/20
+# Date Last mod: 9/12/20
 # Author: Yoshihiro Sato
 #**********************************
 
@@ -16,9 +16,9 @@ CXX = g++-10
 MPICXX = mpicxx 
 CXX_FLAGS = -I $(INC) -fopenmp -std=c++11 -O3
 
-# programs to be made:
-PROGS_OMP = squapi squapi_omp squapi_cont_omp
-PROGS_MPI = $(PROGS_OMP) squapi_mpi squapi_cont_mpi
+# programs to be built:
+PROGS_OMP = squapi squapi_omp
+PROGS_MPI = $(PROGS_OMP) squapi_mpi
 PROGS = $(PROGS_MPI) 
 
 # object files involved:
@@ -27,7 +27,7 @@ OBJS_MPI = $(OBJS_OMP) sqmodule_mpi.o
 OBJS = $(OBJS_MPI)
 
 # dependencies:
-DEPS_OMP = $(INC)/sqmodule.h $(INC)/sqmodule_omp.h $(INC)/cont.h \
+DEPS_OMP = $(INC)/sqmodule.h $(INC)/sqmodule_omp.h $(INC)/cont.h\
 		   $(OBJS_OMP)
 DEPS_MPI = $(INC)/* $(OBJS_MPI) 
 
@@ -55,14 +55,8 @@ squapi: $(SRC)/squapi.cpp $(INC)/sqmodule.h sqmodule.o
 squapi_omp: $(SRC)/squapi_omp.cpp $(DEPS_OMP)
 	$(CXX) $(CXX_FLAGS) $(OBJS_OMP) $(SRC)/squapi_omp.cpp -o squapi_omp  
 
-squapi_cont_omp: $(SRC)/squapi_cont_omp.cpp $(DEPS_OMP) 
-	$(CXX) $(CXX_FLAGS) $(OBJS_OMP) $(SRC)/squapi_cont_omp.cpp -o squapi_cont_omp 
-
 squapi_mpi: $(SRC)/squapi_mpi.cpp $(DEPS_MPI)
 	$(MPICXX) $(CXX_FLAGS) $(OBJS_MPI) $(SRC)/squapi_mpi.cpp -o squapi_mpi 
-
-squapi_cont_mpi:$(SRC)/squapi_cont_mpi.cpp $(DEPS_MPI) 
-	$(MPICXX) $(CXX_FLAGS) $(OBJS_MPI) $(SRC)/squapi_cont_mpi.cpp -o squapi_cont_mpi 
 
 install: $(PROGS) $(SRC)/squapi.py 
 	install -s $(PROGS) $(BIN)
