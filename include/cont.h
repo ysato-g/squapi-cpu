@@ -5,7 +5,7 @@
  * Date Created : 8/23/20
  * Date Last mod: 9/15/20
  * Author: Yoshihiro Sato
- * Description: Header file of cont.cpp needed in squapi_xxx.cpp and squapi_cont_xxx.cpp 
+ * Description: Header file of cont.cpp used in squapi_xxx.cpp for "--cont" 
  * Notes:
  *      - Based on C++11 (for merge of unordered_map)
  *      - Develped using gcc 10.2.0 on MacOS 10.14 

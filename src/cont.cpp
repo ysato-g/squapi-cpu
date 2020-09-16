@@ -3,9 +3,9 @@
  * Major version: 0
  * version: 0.0.2 (x.0.x serial)
  * Date Created : 8/23/20
- * Date Last mod: 9/13/20
+ * Date Last mod: 9/16/20
  * Author: Yoshihiro Sato
- * Description: Functions used in squapi_xxx.cpp and squapi_xxx.cpp 
+ * Description: Functions used in squapi_xxx.cpp for "--cont" 
  * Notes:
  *      - Based on C++11 (for merge of unordered_map)
  *      - Develped using gcc 10.2.0 on MacOS 10.14 

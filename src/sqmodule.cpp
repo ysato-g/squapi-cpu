@@ -6,7 +6,6 @@
  * Date Last mod: 9/16/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi.cpp, squapi_omp.cpp, squapi_mpi.cpp
- *              and  squapi_cont_xxx.cpp
  * Notes:
  *      - All Eq.(x) are refering to the corresponding equation numbers in 
  *        Y.Sato, Journal of Chemical Physics 150 (2019) 224108.

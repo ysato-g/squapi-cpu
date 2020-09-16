@@ -5,7 +5,7 @@
  * Date Created : 8/23/20
  * Date Last mod: 9/14/20
  * Author: Yoshihiro Sato
- * Description: Functions used in squapi_mpi.cpp and squapi_cont_mpi.cpp 
+ * Description: Functions used in squapi_mpi.cpp 
  * Notes:
  *      - All Eq.(x) are refering to the corresponding equation numbers in 
  *        Y.Sato, Journal of Chemical Physics 150 (2019) 224108
