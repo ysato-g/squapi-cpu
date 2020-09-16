@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.0.1
  * Date Created : 8/15/20
- * Date Last mod: 9/13/20
+ * Date Last mod: 9/15/20
  * Author: Yoshihiro Sato
  * Description: the main function of genrhos 
  * Compile: $g++ -std=c++11 squapi.cpp sqmodule.cpp -o squapi 
@@ -33,26 +33,16 @@ int main(int argc, char* argv[])
     clock_t time0 = clock();
     
     // Define S-QuAPI quantities:
-    std::vector<std::complex<double>> energy;
-    std::vector<std::complex<double>> eket;
     std::vector<std::complex<double>> U;
     std::vector<std::vector<std::complex<double>>> s;
-    std::vector<std::complex<double>> gm0;
-    std::vector<std::complex<double>> gm1;
-    std::vector<std::vector<std::complex<double>>> gm2;
-    std::vector<std::vector<std::complex<double>>> gm3;
-    std::vector<std::vector<std::complex<double>>> gm4;
-    std::vector<std::complex<double>> rhos0;
-    std::vector<std::complex<double>> D;
+    std::vector<std::complex<double>> gm0, gm1;
+    std::vector<std::vector<std::complex<double>>> gm2, gm3, gm4;
+    std::vector<std::complex<double>> rhos0, D;
     int Nmax, Dkmax, M;
     double Dt, theta;
     
     // Load data from files and store them in the S-QuAPI parameters: 
-    load_data(argv, energy, eket, U, s, 
-              gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
-
-    // generate U for the propagators:
-    getU(Dt, energy, eket, U);  
+    load_data(argv, U, s, gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
 
     // Show S-QuAPI parameters:
     std::cout << "----- Date and Time --------------------" << std::endl;

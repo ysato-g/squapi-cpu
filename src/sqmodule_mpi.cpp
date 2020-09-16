@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.2.1 (x.2.x MPI)
  * Date Created : 8/23/20
- * Date Last mod: 9/7/20
+ * Date Last mod: 9/14/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_mpi.cpp and squapi_cont_mpi.cpp 
  * Notes:
@@ -80,16 +80,16 @@ void round_manage_cpu(int myid, int nprocs,
 
 
 void getCW_mpi(int myid, int nprocs, int root,
-          double theta,
-          std::vector<std::complex<double>>& U,
-          std::vector<std::vector<std::complex<double>>>& s, 
-          std::vector<std::complex<double>>& gm0,
-          std::vector<std::complex<double>>& gm1,
-          std::vector<std::vector<std::complex<double>>>& gm2,
-          std::vector<std::vector<std::complex<double>>>& gm3,
-          std::vector<std::vector<std::complex<double>>>& gm4,
-          std::vector<std::vector<unsigned long long>>& C,
-          std::vector<std::vector<std::complex<double>>>& W)
+               double theta,
+               std::vector<std::complex<double>>& U,
+               std::vector<std::vector<std::complex<double>>>& s, 
+               std::vector<std::complex<double>>& gm0,
+               std::vector<std::complex<double>>& gm1,
+               std::vector<std::vector<std::complex<double>>>& gm2,
+               std::vector<std::vector<std::complex<double>>>& gm3,
+               std::vector<std::vector<std::complex<double>>>& gm4,
+               std::vector<std::vector<unsigned long long>>& C,
+               std::vector<std::vector<std::complex<double>>>& W)
 {
     /***************************************************
      * MPI version of getCW with memory management
@@ -254,17 +254,17 @@ void getCW_mpi(int myid, int nprocs, int root,
 
 
 void getD0_mpi(int N, 
-           int myid, int nprocs, int root,
-           std::vector<unsigned long long>& Cn_1,
-           std::vector<std::complex<double>>& rhos0,
-           std::vector<std::complex<double>>& U,
-           std::vector<std::vector<std::complex<double>>>& s, 
-           std::vector<std::complex<double>>& gm0,
-           std::vector<std::complex<double>>& gm1,
-           std::vector<std::vector<std::complex<double>>>& gm2,
-           std::vector<std::vector<std::complex<double>>>& gm3,
-           std::vector<std::vector<std::complex<double>>>& gm4,
-           std::vector<std::complex<double>>& D)
+               int myid, int nprocs, int root,
+               std::vector<unsigned long long>& Cn_1,
+               std::vector<std::complex<double>>& rhos0,
+               std::vector<std::complex<double>>& U,
+               std::vector<std::vector<std::complex<double>>>& s, 
+               std::vector<std::complex<double>>& gm0,
+               std::vector<std::complex<double>>& gm1,
+               std::vector<std::vector<std::complex<double>>>& gm2,
+               std::vector<std::vector<std::complex<double>>>& gm3,
+               std::vector<std::vector<std::complex<double>>>& gm4,
+               std::vector<std::complex<double>>& D)
 {
     /*****************************************************
      *  Computes D based on Eq.(19) for N < Dkamx + 1  
@@ -394,17 +394,17 @@ void getD0_mpi(int N,
 
 
 void getD1_mpi(int N,
-           int myid, int nprocs, int root,
-           std::vector<unsigned long long>& Cn_1,
-           std::unordered_map<unsigned long long, int>& Cnmap,
-           std::vector<std::complex<double>>& U,
-           std::vector<std::vector<std::complex<double>>>& s, 
-           std::vector<std::complex<double>>& gm0,
-           std::vector<std::complex<double>>& gm1,
-           std::vector<std::vector<std::complex<double>>>& gm2,
-           std::vector<std::vector<std::complex<double>>>& gm3,
-           std::vector<std::vector<std::complex<double>>>& gm4,
-           std::vector<std::complex<double>>& D)
+               int myid, int nprocs, int root,
+               std::vector<unsigned long long>& Cn_1,
+               std::unordered_map<unsigned long long, int>& Cnmap,
+               std::vector<std::complex<double>>& U,
+               std::vector<std::vector<std::complex<double>>>& s, 
+               std::vector<std::complex<double>>& gm0,
+               std::vector<std::complex<double>>& gm1,
+               std::vector<std::vector<std::complex<double>>>& gm2,
+               std::vector<std::vector<std::complex<double>>>& gm3,
+               std::vector<std::vector<std::complex<double>>>& gm4,
+               std::vector<std::complex<double>>& D)
 {
     /*****************************************************
      *  Computes D based on Eq.(21) for N > Dkamx + 1  
@@ -614,10 +614,6 @@ void getrhos_mpi(int N,
         Wnbufall.resize(block_reg * nprocs);
         Dbufall.resize(block_reg  * nprocs);
     }
-    // root resets rhos: (uncecessary? just in case)
-    //if (myid == root){
-    //    std::fill(rhos.begin(), rhos.end(), std::complex<double>(0, 0));
-    //}
     // every rank resets rhosbuf:
     std::fill(rhosbuf.begin(), rhosbuf.end(), std::complex<double>(0, 0));
 

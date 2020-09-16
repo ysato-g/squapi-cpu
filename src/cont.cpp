@@ -1,7 +1,7 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.1 (x.0.x serial)
+ * version: 0.0.2 (x.0.x serial)
  * Date Created : 8/23/20
  * Date Last mod: 9/13/20
  * Author: Yoshihiro Sato
@@ -121,6 +121,23 @@ void checkdata (std::string filename, int N0, int Nmax, int Dkmax)
         std::cout << "----------------------------------------" << std::endl;
         exit(1);
     }
+}
+
+void manage_opts (int argc, char* argv[], int& Nmax, int& Dkmax, double& theta,
+                  std::string filename_D, std::string filename_rhos,
+                  int& N0, std::vector<std::complex<double>>& D)
+{
+    // set N0 value for the N loop
+    N0 = -1;
+    // searches if argv contains "--cont"
+    for (auto i = 0; i < argc; ++i){
+        std::string arg = argv[i]; 
+        if (arg == "--cont" || arg == "-c"){
+            // overwrite N0, theta, and D by those in D.dat
+            load_D(filename_D, N0, theta, D);          // filename_D is D.dat
+            checkdata(filename_rhos, N0, Nmax, Dkmax); // filename_rhos is rhos.dat
+        }       
+    } 
 }
 
 //=======================  EOF  ================================================

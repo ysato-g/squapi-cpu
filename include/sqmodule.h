@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.0 (serial)
+ * version: 0.0.1 (serial)
  * Date Created : 8/15/20
- * Date Last mod: 8/26/20
+ * Date Last mod: 9/16/20
  * Author: Yoshihiro Sato
  * Description: Header file for functions written in sqmodule.cpp 
  * Notes:  
@@ -19,8 +19,6 @@ std::vector<std::vector<std::complex<double>>> vec2mat(std::vector<std::complex<
                                                        std::vector<int>& shape);
 
 void load_data(char* argv[],
-               std::vector<std::complex<double>>& energy,
-               std::vector<std::complex<double>>& eket,
                std::vector<std::complex<double>>& U,
                std::vector<std::vector<std::complex<double>>>& s,
                std::vector<std::complex<double>>& gm0,

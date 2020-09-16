@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.2.2 (MPI with some OpenMP for multi-node system)
  * Date Created : 8/21/20
- * Date Last mod: 9/13/20
+ * Date Last mod: 9/16/20
  * Author: Yoshihiro Sato
  * Description: the main function of squapi_mpi 
  * Usage: $ mpiexec -np (nprocs) squapi_mpi system.dat init.dat (Nmax) (theta) (--cont)
@@ -47,43 +47,23 @@ int main(int argc, char* argv[])
     double time0 = MPI_Wtime(); // for time measurement using MPI 
     
     // --- global S-QuAPI variables:
-    std::vector<std::complex<double>> Dtc;
-    std::vector<std::complex<double>> energy;
-    std::vector<std::complex<double>> eket;
     std::vector<std::complex<double>> U;
     std::vector<std::vector<std::complex<double>>> s;
-    std::vector<std::complex<double>> gm0;
-    std::vector<std::complex<double>> gm1;
-    std::vector<std::vector<std::complex<double>>> gm2;
-    std::vector<std::vector<std::complex<double>>> gm3;
-    std::vector<std::vector<std::complex<double>>> gm4;
-    std::vector<std::complex<double>> rhos0;
-    std::vector<std::complex<double>> D;
-    int Nmax, Dkmax, M;
+    std::vector<std::complex<double>> gm0, gm1;
+    std::vector<std::vector<std::complex<double>>> gm2, gm3, gm4;
+    std::vector<std::complex<double>> rhos0, D;
+    int Nmax, Dkmax, M, N0;
     double Dt, theta;
     
     // load data from files and store them in the S-QuAPI parameters: 
-    load_data(argv, energy, eket, U, s, 
-              gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
+    load_data(argv, U, s, gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
 
-    // set N0 value for the N loop
-    int N0 = -1;
-    // root searches if argv contains "--cont"
+    // root sets N0 value for the N loop and D based on options:
     if (myid == root){
-        for (auto i = 0; i < argc; ++i){
-            std::string arg = argv[i]; 
-            if (arg == "--cont" || arg == "-c"){
-                // overwrite N0, theta, and D by those in D.dat
-                load_D("D.dat", N0, theta, D);
-                checkdata("rhos.dat", N0, Nmax, Dkmax);
-            }       
-        } 
+        manage_opts(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat",  N0, D);    
     }
     // root broadcasts N0 to all ranks: 
     MPI_Bcast(&N0, 1, MPI_INT, root, MPI_COMM_WORLD);
-
-    // --- generate U for the propagators
-    getU(Dt, energy, eket, U);  
 
     // -------- load S-QuAPI parameters -------------------------
     if (myid == root){

@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.0.1 (x.0.x serial)
  * Date Created : 8/15/20
- * Date Last mod: 9/13/20
+ * Date Last mod: 9/16/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi.cpp, squapi_omp.cpp, squapi_mpi.cpp
  *              and  squapi_cont_xxx.cpp
@@ -103,9 +103,37 @@ std::vector<std::vector<std::complex<double>>> vec2mat(std::vector<std::complex<
 }
 
 
+void getU(double Dt,
+          std::vector<std::complex<double>>& energy,
+          std::vector<std::complex<double>>& eket,
+          std::vector<std::complex<double>>& U)
+{
+    /****************************************************
+     * Generates the time evolution operator U that is
+     * needed to compute free propagator K of Eq.(5) as 
+     * K(s0, s1, s2, s3) = U(s2, s0) * U(s3, s1)
+     * Input: Dt, energy, eket
+     ****************************************************/ 
+    int M = energy.size();
+    // --- initialize U ---
+    U.resize(M * M);
+    // --- generate U ---
+    for (int m0 = 0; m0 < M; ++m0){
+        for (int m1 = 0; m1 < M; ++m1){
+            std::complex<double> u(0, 0);
+            for (int m = 0; m < M; ++m){
+                std::complex<double> cj(0, -1);  // std::conjugate of j
+                auto e  = std::exp(cj * energy[m] * Dt / HBAR);
+                u += eket[m * M + m0] * e * std::conj(eket[m * M + m1]);
+            }
+            //U[m0][m1] = u, i.e., m0 = row, m1 = col
+            U[m0 * M  + m1] = u;
+        }
+    }
+}
+
+
 void load_data(char* argv[], // argv from main()
-               std::vector<std::complex<double>>& energy,
-               std::vector<std::complex<double>>& eket,
                std::vector<std::complex<double>>& U,
                std::vector<std::vector<std::complex<double>>>& s,
                std::vector<std::complex<double>>& gm0,
@@ -135,6 +163,8 @@ void load_data(char* argv[], // argv from main()
     std::vector< std::vector< std::complex<double>>> arrs; // data array
     std::vector< std::vector< int >> shapes;               // shape of each of the arrays
     std::vector<std::complex<double>> Dtc;                 // Dt in complex form
+    std::vector<std::complex<double>> energy, eket;        // energy and eket from squapi.py
+
     // Extract std::vectors from arrs, reshaping in accordance with shapes:
     getdata(argv[1], arrs, shapes);     // argv[1] = "system.dat"
     Dtc    = arrs[0];
@@ -161,36 +191,9 @@ void load_data(char* argv[], // argv from main()
     theta = std::stod(argv[4]); // theta = argv[4] 
     Dkmax = gm2[0].size();
     M     = s[0].size();
-}
 
-
-void getU(double Dt,
-          std::vector<std::complex<double>>& energy,
-          std::vector<std::complex<double>>& eket,
-          std::vector<std::complex<double>>& U)
-{
-    /****************************************************
-     * Generates the time evolution operator U that is
-     * needed to compute free propagator K of Eq.(5) as 
-     * K(s0, s1, s2, s3) = U(s2, s0) * U(s3, s1)
-     * Input: Dt, energy, eket
-     ****************************************************/ 
-    int M = energy.size();
-    // --- initialize U ---
-    U.resize(M * M);
-    // --- generate U ---
-    for (int m0 = 0; m0 < M; ++m0){
-        for (int m1 = 0; m1 < M; ++m1){
-            std::complex<double> u(0, 0);
-            for (int m = 0; m < M; ++m){
-                std::complex<double> cj(0, -1);  // std::conjugate of j
-                auto e  = std::exp(cj * energy[m] * Dt / HBAR);
-                u += eket[m * M + m0] * e * std::conj(eket[m * M + m1]);
-            }
-            //U[m0][m1] = u, i.e., m0 = row, m1 = col
-            U[m0 * M  + m1] = u;
-        }
-    }
+    // generate U for the propagators:
+    getU(Dt, energy, eket, U);  
 }
 
 
