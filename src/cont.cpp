@@ -123,9 +123,9 @@ void checkdata (std::string filename, int N0, int Nmax, int Dkmax)
     }
 }
 
-void manage_opts (int argc, char* argv[], int& Nmax, int& Dkmax, double& theta,
-                  std::string filename_D, std::string filename_rhos,
-                  int& N0, std::vector<std::complex<double>>& D)
+void manage_opt (int argc, char* argv[], int& Nmax, int& Dkmax, double& theta,
+                 std::string filename_D, std::string filename_rhos,
+                 int& N0, std::vector<std::complex<double>>& D)
 {
     // set N0 value for the N loop
     N0 = -1;

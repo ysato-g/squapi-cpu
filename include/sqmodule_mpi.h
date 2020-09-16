@@ -11,7 +11,7 @@
  *      - Develped using gcc 10.2.0 and Open MPI 4.0.4 
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
-void round_manage_cpu(int myid, int nprocs,
+void manage_round_cpu(int myid, int nprocs,
                       int size, int byte_per_block,
                       int& block_reg, int& block_fin,
                       int& nblocks_reg,

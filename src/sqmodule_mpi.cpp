@@ -31,7 +31,7 @@
 
 // ************************************* Functions  *****************************************
 
-void round_manage_cpu(int myid, int nprocs,
+void manage_round_cpu(int myid, int nprocs,
                       int size, int byte_per_block,
                       int& block_reg, int& block_fin,
                       int& nblocks_reg,
@@ -148,7 +148,7 @@ void getCW_mpi(int myid, int nprocs, int root,
         int nrounds_reg, nrounds;
         MPI_Comm comm_reg, comm_sem, comm_fin;
 
-        round_manage_cpu(myid, nprocs,
+        manage_round_cpu(myid, nprocs,
                          size, byte_per_block,
                          block_reg, block_fin, nblocks_reg,
                          nranks_reg, nranks_sem, nranks_fin,
@@ -299,7 +299,7 @@ void getD0_mpi(int N,
     int nrounds_reg, nrounds;
     MPI_Comm comm_reg, comm_sem, comm_fin;
 
-    round_manage_cpu(myid, nprocs,
+    manage_round_cpu(myid, nprocs,
                      size, byte_per_block,
                      block_reg, block_fin, nblocks_reg,
                      nranks_reg, nranks_sem, nranks_fin,
@@ -451,7 +451,7 @@ void getD1_mpi(int N,
     int nrounds_reg, nrounds;
     MPI_Comm comm_reg, comm_sem, comm_fin;
 
-    round_manage_cpu(myid, nprocs,
+    manage_round_cpu(myid, nprocs,
                      size, byte_per_block,
                      block_reg, block_fin, nblocks_reg,
                      nranks_reg, nranks_sem, nranks_fin,
@@ -602,7 +602,7 @@ void getrhos_mpi(int N,
     int nrounds_reg, nrounds;
     MPI_Comm comm_reg, comm_sem, comm_fin;
 
-    round_manage_cpu(myid, nprocs,
+    manage_round_cpu(myid, nprocs,
                      size, byte_per_block,
                      block_reg, block_fin, nblocks_reg, 
                      nranks_reg, nranks_sem, nranks_fin,

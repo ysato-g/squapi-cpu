@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
     // root sets N0 value for the N loop and D based on options:
     if (myid == root){
-        manage_opts(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat",  N0, D);    
+        manage_opt(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat",  N0, D);    
     }
     // root broadcasts N0 to all ranks: 
     MPI_Bcast(&N0, 1, MPI_INT, root, MPI_COMM_WORLD);

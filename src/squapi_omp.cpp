@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
     load_data(argv, U, s, gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt, theta);
 
     // set N0 value for the N loop and D based on options:
-    manage_opts(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat", N0, D);    
+    manage_opt(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat", N0, D);    
 
     // -------- load S-QuAPI parameters -------------------------
     std::cout << "----- Date and Time --------------------" << std::endl;
