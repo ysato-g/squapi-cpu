@@ -2,7 +2,7 @@
 '''
 Project: S-QuAPI for CPU
 Date Created : 8/30/20
-Date Last mod: 9/12/20
+Date Last mod: 9/17/20
 Author: Yoshihiro Sato
 Description: Exciton dynamics of a pigment-protein dimer using S-QuAPI.
              The default parameters are set to reproduces Fig.2 
@@ -44,7 +44,7 @@ T = 300
 s   = [[0, 1], [1, 0]]  # two sets of bath coordinates  
 lam = [100/5,  100/5]   # Reorganization energies
 mu  = lam               # Counter terms
-g = lambda bath, t: sq.gLD(t, lam[bath], 53/hbar, T) 
+g = lambda bath, t: sq.gDL(t, lam[bath], 53/hbar, T) 
 
 #--- initial density matirx
 rhosA = [[1, 0], [0, 0]]  # The donor site excited

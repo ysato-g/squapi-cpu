@@ -2,7 +2,7 @@
 """
 Project: S-QuAPI for CPU
 Date Created : 8/15/20
-Date Last mod: 9/12/20
+Date Last mod: 9/17/20
 Author: Yoshihiro Sato
 Description: Exciton dynamics of the FMO complex using S-QuAPI. 
              The default parameters are set to reproduce Fig.3 
@@ -52,7 +52,7 @@ s   = np.identity(len(H))    # System-bath coupling matrix
 lam = [35] * len(H)          # Reorganization energies in [cm^-1] [35]
 mu  = lam                    # Counter terms in [cm^-1] [lam]
 wc  = 1/(50 * fs)            # Bath cut-off frequency in [1/ps] [1 / (50 * fs)
-g   = lambda bath, t: sq.gLD(t, lam[bath], wc, T) # Bath function defined
+g   = lambda bath, t: sq.gDL(t, lam[bath], wc, T) # Bath function defined
 
 #--- initial density matirx
 rhosA = np.zeros_like(H)

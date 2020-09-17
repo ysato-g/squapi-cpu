@@ -44,7 +44,7 @@ T = 77
 s   = [[0, 1], [1, 0]]  # System-bath coupling matrix
 lam = [100/5,  100/5]   # Reorganization energies
 mu  = lam               # Counter terms
-g = lambda bath, t: sq.gLD(t, lam[bath], 53/hbar, T) 
+g = lambda bath, t: sq.gDL(t, lam[bath], 53/hbar, T) 
 
 #--- initial density matirx
 rhosA = [[1, 0],[0, 0]]   # The donor site excited

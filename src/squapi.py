@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-squapi module Version 0.25
-Last Updated: 8/29/2020
+squapi module Version 0.26
+Last Updated: 9/17/2020
 Author: Yoshihiro Sato
 Description: This module requires
     numpy 1.11.1 or above
@@ -15,7 +15,7 @@ Notes:
 """
 
 #==============================================================================
-#                           Definitions
+#                    Essential Functions for S-QuAPI 
 #==============================================================================
 import numpy as np
 import scipy.linalg as LA
@@ -54,6 +54,7 @@ Mole   = 6.02214076e23 # mole
 ## other physical constnt from NIST 
 me = 9.1093837015e-31 * Kg # electron mass in [cm^-1 (ps/angstrom)^2]
 
+
 def systeminfo(H):
     '''
     Generates arrays of eigenvalues and eigenvectors of H.
@@ -74,7 +75,139 @@ def systeminfo(H):
     ebra = eket.conjugate().T                # ebra[site, a] = <E_a|site> 
     U = eket.T                               # U[site, a]    = <site|E_a> (matrix)
     return energy, eket, ebra, U
+
+
+
+def getRIC(lam, mu, T, Dt, Dkmax, g, scaled=False):
+    '''
+    Generates the reduced influence coeffcienets
+    See Eq.(9) of Sato J.Chem.Phys.150(2019)224108
+    - Set "scaled=True" if g(bath, t) = (lam[bath] / lam[0]) * g(0, t) holds 
+    - Set "scaled=Fasle" if not
+    '''
+    nbath = len(lam)
+    gm0 = np.empty(nbath, dtype=complex)
+    gm1 = np.empty(nbath, dtype=complex)
+    gm2 = np.empty((nbath, Dkmax), dtype=complex)
+    gm3 = np.empty((nbath, Dkmax), dtype=complex)
+    gm4 = np.empty((nbath, Dkmax), dtype=complex)
+    #--- generate g0 and g1
+    for bath in range(nbath):
+        gm0[bath] = g(bath, Dt/2) - 1j * (lam[bath] - mu[bath]) * (Dt/2) / hbar
+        gm1[bath] = g(bath, Dt)   - 1j * (lam[bath] - mu[bath]) * Dt / hbar
+    #--- generate g2, g3, and g4
+    if scaled:
+        bath = 0
+        for Dk in range(1, Dkmax + 1):
+            gm2[bath, Dk-1] = g(bath, (Dk - 1) * Dt) - g(bath, (Dk - 1/2) * Dt)\
+                              - g(bath, Dk * Dt) + g(bath, (Dk + 1/2) * Dt)  
+            gm3[bath, Dk-1] = g(bath, (Dk + 1) * Dt) - 2 * g(bath, Dk * Dt)\
+                              + g(bath, (Dk - 1) * Dt)
+            gm4[bath, Dk-1] = g(bath, Dk * Dt) - 2 * g(bath, (Dk - 1/2) * Dt)\
+                              + g(bath, (Dk - 1) * Dt)
+        for bath in range(1, nbath):
+            mag = lam[bath] / lam[0] ## magnification factor ##
+            gm2[bath] = mag * gm2[0]
+            gm3[bath] = mag * gm3[0]
+            gm4[bath] = mag * gm4[0]
+    else:
+        for bath in range(nbath):
+            for Dk in range(1, Dkmax + 1):
+                gm2[bath, Dk-1] = g(bath, (Dk - 1) * Dt) - g(bath, (Dk - 1/2) * Dt)\
+                                  - g(bath, Dk * Dt) + g(bath, (Dk + 1/2) * Dt)  
+                gm3[bath, Dk-1] = g(bath, (Dk + 1) * Dt) - 2 * g(bath, Dk * Dt)\
+                                  + g(bath, (Dk - 1) * Dt)
+                gm4[bath, Dk-1] = g(bath, Dk * Dt) - 2 * g(bath, (Dk - 1/2) * Dt)\
+                                  + g(bath, (Dk - 1) * Dt)
+    #--- results
+    return [gm0, gm1, gm2, gm3, gm4]
+
+
+
+def save_arrs(arrs, filename):
+    '''
+    arrs: list of numpy arrays
+    filename: a data text file
+    Writes the shape of each arr and flatten it into a text file
+    following the format of getdata(filename, arrs, sheapes)
+    in sqmodule.cpp
+    '''
+
+    file = open(filename, 'w')
+    file.write(str(len(arrs))) # the total number of arrays
+    file.write('\n')
+    for arr in arrs:
+        file.write(str(arr.ndim))
+        file.write('dim ')
+        for n in range(arr.ndim):
+            file.write(str(arr.shape[n]))
+            file.write(',')
+        file.write(str('\n'))
+        for af in arr.flatten():
+            file.write(str(af.real))
+            file.write(' ')
+            file.write(str(af.imag))
+            file.write('\n')
+    file.close()
+
+
+def save_system(H, s, lam, mu, T, Dt, Dkmax, g, scaled=False):
+    '''
+    Generates system.dat
+    '''
+    # Force the input to be numpy arrays:
+    H = np.array(H, dtype=complex)
+    s = np.array(s, dtype=complex)
+    lam = np.array(lam, dtype=complex)
+    mu = np.array(mu, dtype=complex)
+    Dtc = np.array([Dt], dtype=complex)
+    # Compute energy and eket:
+    energy, eket, ebra, U = systeminfo(H)
+    # Compute the RICs:
+    gm = getRIC(lam, mu, T, Dt, Dkmax, g, scaled)
+
+    arrs = [Dtc, energy, eket, s, gm[0], gm[1], gm[2], gm[3], gm[4]]
+    # Write the shape of arr and flatten arr into a text file, 'arrs.dat'
+    save_arrs(arrs, 'system.dat')
+
+
+def save_init(rhos0):
+    '''
+    Generates init.dat
+    '''
+    # Force the input to be numpy array:
+    rhos0 = np.array(rhos0, dtype=complex)
+    arrs = [rhos0]
+    # write the shape of rhos0 and flatten rhos0 into a text file, 'init.dat'
+    save_arrs(arrs, 'init.dat')
+
+
+def load_rhos(filename='rhos.dat'):
+    '''
+    Loads rhos from filename=rhos.dat
+    '''
+    data = np.loadtxt('rhos.dat', comments='#', delimiter=',', dtype='complex')
+    # extract arrays and change dtype
+    Narr    = data[:,0].real.astype(int)   # array of N values. Use this for selecting
+    rhosarr = data[:,1]                    # array of rhos(N) values
     
+    M2 = np.count_nonzero(Narr == 0)
+    M  = int(M2 ** 0.5)
+    Nmax = int(data[-1, 0].real) # extract Nmax
+    rhos = np.zeros((Nmax + 1, M, M), dtype=complex) 
+    
+    for N in range(Narr.min(), Narr.max()+1):
+        select = Narr == N
+        rhos[N] = rhosarr[select].reshape((M, M))
+
+    return rhos
+
+
+
+#==============================================================================
+#              Spectral Densitites and Line-Broadening Functions  
+#==============================================================================
+#---- Special Functions 
 def PolyGamma(n, z, rmax=10000):
     '''
     complex poly gamma function based on
@@ -83,6 +216,7 @@ def PolyGamma(n, z, rmax=10000):
     $$
     with which $\psi^{(0)}(z)$ is the digamma function $\psi(z)$.
     Default rmax is 1000. Increase it for better precision
+    See Eq.(A3) of Sato J.Chem.Phys.150(2019)224108
     Notes: 
     - scipy.special.polygamma does not take complex argument
     - 'import numpy as np' is assumed
@@ -102,6 +236,7 @@ def HurwitzLerchPhi(z, s, a, rmax=10000):
     $$
     for $|z| < 1$ and $a \not= 0, -1, -2, ...$.
     Default rmax is 10000. Increase it for better precision.
+    See Eq.(A8) of Sato J.Chem.Phys.150(2019)224108
     Notes: 
     - scipy.special does not have this function in it
     - 'import numpy as np' is assumed
@@ -109,11 +244,228 @@ def HurwitzLerchPhi(z, s, a, rmax=10000):
     return np.array([z**r / (r + a)**s for r in range(rmax)]).sum()
 
 
-#========== Spectral densities and their associated Line Broadening Functions ===================
+#========== Spectral densities and Line-Broadening Functions ===================
+#------------ Direct Quadrature -----------------------
+def lamDQ(J):
+    '''
+    Computes the reorganization energy by direct quadrature
+    See Eq.(3) of Sato J.Chem.Phys.150(2019)224108
+    Note: J(omega) has the only argument omega and no other.
+    '''
+    f = lambda omega : J(omega) / omega;
+    return quad(f, 0, np.inf)[0]
 
-#---------- Drude Lorentz ------------
+def Gamma(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
+    '''
+    Computes the decoherence function by direct quadrature 
+    See Eq.(8a) of Sato J.Chem.Phys.150(2019)224108
+    Note: J(omega) has the only argument omega and no other.
+    mid    = 1e5  ## break up [0, np.inf] into [0, mid] + [mid, np.inf]
+    epsrel = 1e-5 ## epsrel value
+    diff is the order of time derivative
+    '''
+    if diff == 0:
+        f = lambda omega, t: J(omega) / (hbar * omega**2) * (1 - np.cos(omega * t))
+    elif diff == 1:
+        f = lambda omega, t: J(omega) / (hbar * omega) * np.sin(omega * t)
+    elif diff == 2:
+        f = lambda omega, t: J(omega)/ hbar * (- np.cos(omega * t))
+    re = lambda omega, T, t : (1 / np.tanh(hbar * omega / (2 * kB * T))) * f(omega, t)  
+    #val_re  = quad(re, 0, np.inf, args=(T, t))[0]
+    val_re  = quad(re, 0, mid, epsrel=epsrel,  args=(T, t))[0]
+    val_re += quad(re, mid, np.inf, epsrel=epsrel, args=(T, t))[0]
+    return val_re
+
+def phi(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
+    '''
+    Computes the phase function by direct quadrature 
+    See Eq.(8b) of Sato J.Chem.Phys.150(2019)224108
+    Note: J(omega) has the only argument omega and no other.
+    mid    = 1e5  ## break up [0, np.inf] into [0, mid] + [mid, np.inf]
+    epsrel = 1e-5 ## epsrel value
+    '''
+    if diff == 0:
+        f = lambda omega, t: J(omega) / (hbar * omega**2) * np.sin(omega * t)
+    elif diff == 1:
+        f = lambda omega, t: J(omega) / (hbar * omega) * np.cos(omega * t)
+    elif diff == 2:
+        f = lambda omega, t: J(omega) / hbar * (- np.sin(omega * t))
+    im = lambda omega, t : f(omega, t)
+    #val_im  = quad(im, 0, np.inf, args=t)[0]
+    val_im  = quad(im, 0, mid, epsrel=epsrel,  args=t)[0]
+    val_im += quad(im, mid, np.inf, epsrel=epsrel,  args=t)[0]
+    return val_im
+
+
+def gDQ(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
+    '''
+    Computes the line-broadening function by direct quadrature 
+    See Eqs.(7) and (8) of Sato J.Chem.Phys.150(2019)224108
+    Note: J(omega) has the only argument omega and no other.
+    mid    = 1e5  ## break up [0, np.inf] into [0, mid] + [mid, np.inf]
+    epsrel = 1e-5 ## epsrel value
+    '''
+    if t <= 0 and diff==0:
+        return 0.
+    else:
+        return Gamma(t, T, J, diff, mid, epsrel) + 1.j * phi(t, T, J, diff, mid, epsrel)
+
+
+def dgDQ(t, T, J):
+    '''
+    Computes the time derivative of the line-broadening function by direct quadrature
+    Note: J(omega) has the only argument omega and no other.
+    '''
+    dfcorr_real = lambda omega, T, t:\
+            (1 / np.tanh(hbar * omega / (2 * kB * T))) * np.sin(omega * t)
+    dfcorr_imag = lambda omega, t: np.cos(omega * t)
+    re = lambda omega, T, t : (1 / hbar) * (J(omega) / omega) * dfcorr_real(omega, T, t)
+    im = lambda omega, t :    (1 / hbar) * (J(omega) / omega) * dfcorr_imag(omega, t)
+    val_re = quad(re, 0, np.inf, args=(T, t))[0]
+    val_im = quad(im, 0, np.inf, args=t)[0]
+    return val_re + 1.j * val_im
+
+def ddgDQ(t, T, J):
+    '''
+    Computes the second time derivative of the line-broadening function 
+    by direct quadrature
+    Note: J(omega) has the only argument omega and no other.
+    '''
+    ddfcorr_real = lambda omega, T, t:\
+            (1 / np.tanh(hbar * omega / (2 * kB * T))) * np.cos(omega * t)
+    ddfcorr_imag = lambda omega, t: - np.sin(omega * t)
+    re = lambda omega, T, t : (1 / hbar) * J(omega) * ddfcorr_real(omega, T, t)
+    im = lambda omega, t :    (1 / hbar) * J(omega) * ddfcorr_imag(omega, t)
+    val_re = quad(re, 0, np.inf, args=(T, t))[0]
+    val_im = quad(im, 0, np.inf, args=t)[0]
+    return val_re + 1.j * val_im
+
+
+#---------- Ohmic with Exponential Cutoff ------------
+def Jexp0(omega, kappa, Omega, p = 0):
+    '''
+    Ohmic spectral density with exponential cutoff. 
+    See Eq.(A1) of Sato J.Chem.Phys.150(2019)224108
+    '''
+    if omega > 0:
+        return kappa * hbar * omega * (omega / Omega)**p * np.exp(-omega / Omega)
+    else:
+        return 0        
+
+def lamexp(kappa, Omega, p = 0):
+    '''
+    Computes reorganization energy of the ohmic spectral density 
+    with exponential cutoff. 
+    See Eq.(A1) of Sato J.Chem.Phys.150(2019)224108
+    '''
+    return kappa * Omega * np.gamma(1 + p)
+
+def gexp0(t, kappa, Omega, T, p = 0):
+    '''
+    Computes line-broadening function of the ohmic spectral density 
+    with exponential cutoff. 
+    See Eqs.(A2) and (A3) of Sato J.Chem.Phys.150(2019)224108
+    '''
+    theta = kB * T / (hbar * Omega)
+    if t <= 0:
+        return 0
+    elif p == 0 and T > 0: # Eq.(A2)
+        term1 = - np.log(1 - 1j * Omega * t)
+        term2 = 2 * loggamma(theta)
+        term3 = - loggamma(theta * (1 + 1j * Omega * t))
+        term4 = - loggamma(theta * (1 - 1j * Omega * t))
+        return  kappa * term1 + kappa * (term2 + term3 + term4)
+    elif p == 0 and T == 0: # Eq.(A2)
+        term1 = - np.log(1 - 1j * Omega * t)
+        return kappa * term1
+    elif p != 0 and T > 0:  # Eq.(A3)
+        term1 = gamma(p) * ((1 - 1j * Omega * t) ** (-p) - 1)
+        term2 = 2 * PolyGamma(p - 1, theta)
+        term3 = - PolyGamma(p - 1, theta * (1 + 1j * Omega * t))
+        term4 = - PolyGamma(p - 1, theta * (1 - 1j * Omega * t))
+        return kappa * term1 + kappa * ((-theta)**p) * (term2 + term3 + term4)
+    elif p != 0 and T == 0: # Eq.(A3)
+        term1 = gamma(p) * ((1 - 1j * Omega * t) ** (-p) - 1)
+        return kappa * term1
+    else:
+        return 0
+
+def dgexp0(t, kappa, Omega, T, p = 0):
+    theta = kB * T / (hbar * Omega)
+    if p >= 0 and T > 0:
+        term1 = gamma(p + 1) * (1j * Omega) *(1 - 1j * Omega * t) ** (-(p + 1))
+        term2 =   PolyGamma(p, theta * (1 + 1j * Omega * t))
+        term3 = - PolyGamma(p, theta * (1 - 1j * Omega * t))
+        return kappa * term1 + kappa * ((-theta)**(p + 1)) * (1j * Omega) * (term2 + term3)
+    elif p >= 0 and T == 0:
+        term1 = gamma(p + 1) * (1j * Omega) *(1 - 1j * Omega * t) ** (-(p + 1))
+        return kappa * term1
+    else:
+        return 0
+
+def ddgexp0(t, kappa, Omega, T, p = 0):
+    theta = kB * T / (hbar * Omega)
+    if p >= 0 and T > 0:
+        term1 = gamma(p + 2) * ((1j * Omega)**2) * (1 - 1j * Omega * t) ** (-(p + 2))
+        term2 = PolyGamma(p + 1, theta * (1 + 1j * Omega * t))
+        term3 = PolyGamma(p + 1, theta * (1 - 1j * Omega * t))
+        return kappa * term1 + kappa * ((-theta)**(p + 2)) * (Omega**2) * (term2 + term3)
+    elif p >= 0 and T == 0:
+        term1 = gamma(p + 2) * ((1j * Omega)**2) * (1 - 1j * Omega * t) ** (-(p + 2))
+        return kappa * term1
+    else:
+        return 0
+
+
+def gexp(t, lam, Omega, T, p = 0):
+    '''
+    Same as gexp0 but takes reorganization energy (lam) instead of kappa.
+    t     in units of [ps]
+    lam   in units of [cm^-1]
+    Omega in units of [1/ps]
+    T     in unist of [K]
+    '''
+    kappa = (lam / hbar) / (Omega * gamma(1 + p))
+    return gexp0(t, kappa, Omega, T, p)
+
+def dgexp(t, lam, Omega, T, p = 0):
+    '''
+    takes reorganization energy lam instead of kappa
+    lam in units of [cm^-1]
+    '''
+    kappa = (lam / hbar) / (Omega * gamma(1 + p))
+    return dgexp0(t, kappa, Omega, T, p)
+
+def ddgexp(t, lam, Omega, T, p = 0):
+    '''
+    takes reorganization energy lam instead of kappa
+    lam in units of [cm^-1]
+    '''
+    kappa = (lam / hbar) / (Omega * gamma(1 + p))
+    return ddgexp0(t, kappa, Omega, T, p)
+
+def Jexp(omega, lam, Omega, p = 0):
+    '''
+    takes reorganization energy lam instead of kappa
+    lam in units of [cm^-1]
+    '''
+    kappa = lam / hbar / (Omega * gamma(1 + p))
+    return Jexp0(omega, kappa, Omega, p)    
+
+
+#---------- Ohmic with Drude-Lorentz Cutoff ------------
 def JDL0(omega, kappa, Omega):
+    '''
+    Ohmic spectral density with Drude-Lorentz cutoff. 
+    See Eq.(A4) of Sato J.Chem.Phys.150(2019)224108
+    '''
     return kappa * hbar * omega * (Omega**2 / (omega**2 + Omega**2))
+
+def lamDL(kappa, Omega):
+    '''
+    Generates reorganization energy in [cm^-1]
+    '''
+    return kappa * np.pi * hbar * Omega / 2
 
 def gDL0(t, kappa, Omega, T):
     eul = 0.57721566490153286061 # The Euler-gamma constant
@@ -181,11 +533,6 @@ def JDL(omega, lam, Omega):
     kappa = 2 * (lam / hbar) / (np.pi * Omega)
     return JDL0(omega, kappa, Omega)
 
-def lamDL(kappa, Omega):
-    '''
-    Generates reorganization energy in [cm^-1]
-    '''
-    return kappa * np.pi * hbar * Omega / 2
 
 def gDL(t, lam, Omega, T):
     '''
@@ -208,108 +555,18 @@ def ddgDL(t, lam, Omega, T):
     kappa = 2 * (lam / hbar) / (np.pi * Omega)
     return ddgDL0(t, kappa, Omega, T)        
 
-# --- below for backward compativility
-def JLD0(omega, kappa, Omega): return JDL0(omega, kappa, Omega)
-def gLD0(t, kappa, Omega, T): return gDL0(t, kappa, Omega, T)
-def JLD(omega, lam, Omega): return JDL(omega, lam, Omega)
-def lamLD(kappa, Omega): return lamDL(kappa, Omega)
-def gLD(t, lam, Omega, T): return gDL(t, lam, Omega, T)
-
-#---------- Exponential ------------
-def gexp0(t, kappa, Omega, T, p = 0):
-    theta = kB * T / (hbar * Omega)
-    if t <= 0:
-        return 0
-    elif p == 0 and T > 0:
-        term1 = - np.log(1 - 1j * Omega * t)
-        term2 = 2 * loggamma(theta)
-        term3 = - loggamma(theta * (1 + 1j * Omega * t))
-        term4 = - loggamma(theta * (1 - 1j * Omega * t))
-        return  kappa * term1 + kappa * (term2 + term3 + term4)
-    elif p == 0 and T == 0:
-        term1 = - np.log(1 - 1j * Omega * t)
-        return kappa * term1
-    elif p != 0 and T > 0:
-        term1 = gamma(p) * ((1 - 1j * Omega * t) ** (-p) - 1)
-        term2 = 2 * PolyGamma(p - 1, theta)
-        term3 = - PolyGamma(p - 1, theta * (1 + 1j * Omega * t))
-        term4 = - PolyGamma(p - 1, theta * (1 - 1j * Omega * t))
-        return kappa * term1 + kappa * ((-theta)**p) * (term2 + term3 + term4)
-    elif p != 0 and T == 0:
-        term1 = gamma(p) * ((1 - 1j * Omega * t) ** (-p) - 1)
-        return kappa * term1
-    else:
-        return 0
-
-def dgexp0(t, kappa, Omega, T, p = 0):
-    theta = kB * T / (hbar * Omega)
-    if p >= 0 and T > 0:
-        term1 = gamma(p + 1) * (1j * Omega) *(1 - 1j * Omega * t) ** (-(p + 1))
-        term2 =   PolyGamma(p, theta * (1 + 1j * Omega * t))
-        term3 = - PolyGamma(p, theta * (1 - 1j * Omega * t))
-        return kappa * term1 + kappa * ((-theta)**(p + 1)) * (1j * Omega) * (term2 + term3)
-    elif p >= 0 and T == 0:
-        term1 = gamma(p + 1) * (1j * Omega) *(1 - 1j * Omega * t) ** (-(p + 1))
-        return kappa * term1
-    else:
-        return 0
-
-def ddgexp0(t, kappa, Omega, T, p = 0):
-    theta = kB * T / (hbar * Omega)
-    if p >= 0 and T > 0:
-        term1 = gamma(p + 2) * ((1j * Omega)**2) * (1 - 1j * Omega * t) ** (-(p + 2))
-        term2 = PolyGamma(p + 1, theta * (1 + 1j * Omega * t))
-        term3 = PolyGamma(p + 1, theta * (1 - 1j * Omega * t))
-        return kappa * term1 + kappa * ((-theta)**(p + 2)) * (Omega**2) * (term2 + term3)
-    elif p >= 0 and T == 0:
-        term1 = gamma(p + 2) * ((1j * Omega)**2) * (1 - 1j * Omega * t) ** (-(p + 2))
-        return kappa * term1
-    else:
-        return 0
-
-def Jexp0(omega, kappa, Omega, p = 0):
-    if omega > 0:
-        return kappa * hbar * omega * (omega / Omega)**p * np.exp(-omega / Omega)
-    else:
-        return 0        
-
-def lamexp(kappa, Omega, p = 0):
-    return kappa * Omega * np.gamma(1 + p)
-
-def gexp(t, lam, Omega, T, p = 0):
-    '''
-        takes reorganization energy lam instead of kappa
-        lam in units of [cm^-1]
-    '''
-    kappa = (lam / hbar) / (Omega * gamma(1 + p))
-    return gexp0(t, kappa, Omega, T, p)
-
-def dgexp(t, lam, Omega, T, p = 0):
-    '''
-        takes reorganization energy lam instead of kappa
-        lam in units of [cm^-1]
-    '''
-    kappa = (lam / hbar) / (Omega * gamma(1 + p))
-    return dgexp0(t, kappa, Omega, T, p)
-
-def ddgexp(t, lam, Omega, T, p = 0):
-    '''
-        takes reorganization energy lam instead of kappa
-        lam in units of [cm^-1]
-    '''
-    kappa = (lam / hbar) / (Omega * gamma(1 + p))
-    return ddgexp0(t, kappa, Omega, T, p)
-
-def Jexp(omega, lam, Omega, p = 0):
-    '''
-        takes reorganization energy lam instead of kappa
-        lam in units of [cm^-1]
-    '''
-    kappa = lam / hbar / (Omega * gamma(1 + p))
-    return Jexp0(omega, kappa, Omega, p)    
-
 
 #----------- Approximated B777 -----------------
+def J777(omega, lam):
+    '''
+        lam in units of [cm^-1]
+    '''
+    term1 = 0.22 * np.exp(- omega / (170 / hbar))
+    term2 = 0.78 * omega /(34 / hbar) * np.exp(- omega / (34 / hbar))
+    term3 = 0.31 * (omega / (69 / hbar))**2 * np.exp(- omega / (69 / hbar))
+    return hbar * omega * (lam / 106.7) * (term1 + term2 + term3)
+
+
 def g777(t, lam, T):
     '''
         lam in units of [cm^-1]
@@ -340,80 +597,6 @@ def ddg777(t, lam, T):
     term3 = ddgexp0(t, 0.31,  69 / hbar, T, 2)
     return (lam / 106.7) * (term1 + term2 + term3)
 
-def J777(omega, lam):
-    '''
-        lam in units of [cm^-1]
-    '''
-    term1 = 0.22 * np.exp(- omega / (170 / hbar))
-    term2 = 0.78 * omega /(34 / hbar) * np.exp(- omega / (34 / hbar))
-    term3 = 0.31 * (omega / (69 / hbar))**2 * np.exp(- omega / (69 / hbar))
-    return hbar * omega * (lam / 106.7) * (term1 + term2 + term3)
-
-
-#------------ Direct Quadrature -----------------------
-def fcorr_real(omega, T, t):
-    return (1 / np.tanh(hbar * omega / (2 * kB * T))) * (1. - np.cos(omega * t))
-
-def dfcorr_real(omega, T, t):
-    return (1 / np.tanh(hbar * omega / (2 * kB * T))) * np.sin(omega * t)
-
-def ddfcorr_real(omega, T, t):
-    return (1 / np.tanh(hbar * omega / (2 * kB * T))) * np.cos(omega * t)
-
-def fcorr_imag(omega, t):
-    return np.sin(omega * t)
-
-def dfcorr_imag(omega, t):
-    return np.cos(omega * t)
-
-def ddfcorr_imag(omega, t):
-    return - np.sin(omega * t)
-
-def gnum(t, T, J, mid=1e5, epsrel=1e-5):
-    '''
-        Note: J(omega) has the only argument omega and no other.
-        mid    = 1e5  ## break up [0, np.inf] into [0, mid] + [mid, np.inf]
-        epsrel = 1e-5 ## epsrel value
-    '''
-    if t <= 0:
-        return 0.
-    elif T > 0:
-        re = lambda omega, T, t : (1 / hbar) * (J(omega) / omega**2) * fcorr_real(omega, T, t)
-        im = lambda omega, t :    (1 / hbar) * (J(omega) / omega**2) * fcorr_imag(omega, t)
-        #val_re  = quad(re, 0, np.inf, args=(T, t))[0]
-        val_re  = quad(re, 0, mid, epsrel=epsrel,  args=(T, t))[0]
-        val_re += quad(re, mid, np.inf, epsrel=epsrel, args=(T, t))[0]
-        #val_im  = quad(im, 0, np.inf, args=t)[0]
-        val_im  = quad(im, 0, mid, epsrel=epsrel,  args=t)[0]
-        val_im += quad(im, mid, np.inf, epsrel=epsrel,  args=t)[0]
-        return val_re + 1.j * val_im
-
-def dgnum(t, T, J):
-    '''
-        Note: J(omega) has the only argument omega and no other.
-    '''
-    re = lambda omega, T, t : (1 / hbar) * (J(omega) / omega) * dfcorr_real(omega, T, t)
-    im = lambda omega, t :    (1 / hbar) * (J(omega) / omega) * dfcorr_imag(omega, t)
-    val_re = quad(re, 0, np.inf, args=(T, t))[0]
-    val_im = quad(im, 0, np.inf, args=t)[0]
-    return val_re + 1.j * val_im
-
-def ddgnum(t, T, J):
-    '''
-        Note: J(omega) has the only argument omega and no other.
-    '''
-    re = lambda omega, T, t : (1 / hbar) * J(omega) * ddfcorr_real(omega, T, t)
-    im = lambda omega, t :    (1 / hbar) * J(omega) * ddfcorr_imag(omega, t)
-    val_re = quad(re, 0, np.inf, args=(T, t))[0]
-    val_im = quad(im, 0, np.inf, args=t)[0]
-    return val_re + 1.j * val_im
-
-def lamnum(J):
-    '''
-        Note: J(omega) has the only argument omega and no other.
-    '''
-    f = lambda omega : J(omega) / omega;
-    return quad(f, 0, np.inf)[0]
 
 
 #------ Adolphs and Renger BiophysJ91(2006)2778 and JChemPhys116(2002)9997 -------
@@ -446,6 +629,7 @@ def ddgAR(t, lam, T):
     lam0 = 78.2630756244 # from lamnum(JAR)
     return (lam / lam0) * ddgnum(t, T, JAR)
 
+
 #----- Lognormal from J.Phys.Chem.B117(2013)7317-7323 ----------------------------
 def JLN(omega, Omega, sigma, lam):
     '''
@@ -472,16 +656,26 @@ def ddgLN(t, Omega, sigma, lam, T):
         return JLN(omega, Omega, sigma, lam)
     return ddgnum(t, T, J)
 
-#----- FMO based on Lognormal --------------------------------------------------
+
+#----- FMO based on Lognormal from J.Phys.Chem.B117(2013)7317-7323 --------------
 def JFMO(omega, lam):
     '''
-        lam in units of [cm^-1]
+    Lognormal SD for FMO from J.Phys.Chem.B117(2013)7317-7323
+    omega in units of [1/ps]
+    lam   in units of [cm^-1]
     '''
     Omega = 38 / hbar;
     sigma = 0.7;
     return JLN(omega, Omega, sigma, lam)
 
 def gFMO(t, lam, T):
+    '''
+    Line-Broadening function associated with the lognormal 
+    SD for FMO from J.Phys.Chem.B117(2013)7317-7323
+    t   in units of [ps]
+    lam in units of [cm^-1]
+    T   in units of [K]
+    '''
     Omega = 38 / hbar;
     sigma = 0.7;
     return gLN(t, Omega, sigma, lam, T)
@@ -495,6 +689,7 @@ def ddgFMO(t, lam, T):
     Omega = 38 / hbar;
     sigma = 0.7;
     return ddgLN(t, Omega, sigma, lam, T)
+
 
 #--- Intramolecular vibrational mode
 def JH1(omega, omegaH, SH, gammaH):
@@ -529,8 +724,6 @@ def JH2(omega, lamH, OmegaH, gammaH):
     val = (1/np.pi) * term0 / term1
     return val
 
-# --- below for backward compativility
-def JH(omega, omegaH, SH, gammaH): return JH1(omega, omegaH, SH, gammaH)
 
 #--- Gaussian spectral density
 def Jgauss(omega, lam, tau):
@@ -547,128 +740,22 @@ def Jgauss(omega, lam, tau):
     return A * omega * np.exp(-(omega * tau / 2)**2) 
 
 
-#============= Reduced Influence Coefficients (RICs) ===========================
-def getGamma(lam, mu, T, Dt, Dkmax, g, scaled):
-    '''
-    Generates the reduced influence coeffcienets
-    - Set "scaled=True" if g(bath, t) = (lam[bath] / lam[0]) * g(0, t) holds 
-    - Set "scaled=Fasle" if not
-    '''
-    nbath = len(lam)
-    gm0 = np.empty(nbath, dtype=complex)
-    gm1 = np.empty(nbath, dtype=complex)
-    gm2 = np.empty((nbath, Dkmax), dtype=complex)
-    gm3 = np.empty((nbath, Dkmax), dtype=complex)
-    gm4 = np.empty((nbath, Dkmax), dtype=complex)
-    #--- generate g0 and g1
-    for bath in range(nbath):
-        gm0[bath] = g(bath, Dt/2) - 1j * (lam[bath] - mu[bath]) * (Dt/2) / hbar
-        gm1[bath] = g(bath, Dt)   - 1j * (lam[bath] - mu[bath]) * Dt / hbar
-    #--- generate g2, g3, and g4
-    if scaled:
-        bath = 0
-        for Dk in range(1, Dkmax + 1):
-            gm2[bath, Dk-1] = g(bath, (Dk - 1) * Dt) - g(bath, (Dk - 1/2) * Dt)\
-                              - g(bath, Dk * Dt) + g(bath, (Dk + 1/2) * Dt)  
-            gm3[bath, Dk-1] = g(bath, (Dk + 1) * Dt) - 2 * g(bath, Dk * Dt)\
-                              + g(bath, (Dk - 1) * Dt)
-            gm4[bath, Dk-1] = g(bath, Dk * Dt) - 2 * g(bath, (Dk - 1/2) * Dt)\
-                              + g(bath, (Dk - 1) * Dt)
-        for bath in range(1, nbath):
-            mag = lam[bath] / lam[0] ## magnification factor ##
-            gm2[bath] = mag * gm2[0]
-            gm3[bath] = mag * gm3[0]
-            gm4[bath] = mag * gm4[0]
-    else:
-        for bath in range(nbath):
-            for Dk in range(1, Dkmax + 1):
-                gm2[bath, Dk-1] = g(bath, (Dk - 1) * Dt) - g(bath, (Dk - 1/2) * Dt)\
-                                  - g(bath, Dk * Dt) + g(bath, (Dk + 1/2) * Dt)  
-                gm3[bath, Dk-1] = g(bath, (Dk + 1) * Dt) - 2 * g(bath, Dk * Dt)\
-                                  + g(bath, (Dk - 1) * Dt)
-                gm4[bath, Dk-1] = g(bath, Dk * Dt) - 2 * g(bath, (Dk - 1/2) * Dt)\
-                                  + g(bath, (Dk - 1) * Dt)
-    #--- results
-    return [gm0, gm1, gm2, gm3, gm4]
+#============================================================================
+#           BELOW JUST FOR BACKWARD COMPATIBILITY
+#             TO BE DEPRECATED IN FUTRE UPDATE
+#============================================================================
+def getGamma(lam, mu, T, Dt, Dkmax, g, scaled=False):
+    return getRIC(lam, mu, T, Dt, Dkmax, g, scaled=False)
+def gnum(t, T, J, mid=1e5, epsrel=1e-5): return gDQ(t, T, J, mid, epsrel)
+def dgnum(t, T, J): return dgDQ(t, T, J)
+def ddgnum(t, T, J): return ddgDQ(t, T, J)
+def lamnum(J): return lamDQ(J)
+def JLD0(omega, kappa, Omega): return JDL0(omega, kappa, Omega)
+def gLD0(t, kappa, Omega, T): return gDL0(t, kappa, Omega, T)
+def JLD(omega, lam, Omega): return JDL(omega, lam, Omega)
+def lamLD(kappa, Omega): return lamDL(kappa, Omega)
+def gLD(t, lam, Omega, T): return gDL(t, lam, Omega, T)
+def JH(omega, omegaH, SH, gammaH): return JH1(omega, omegaH, SH, gammaH)
 
-
-#============= Additonal Functions ===========================
-def save_arrs(arrs, filename):
-    '''
-    arrs: array of numpy arrays
-    filename: a data text file
-    Writes the shape of each arr and flatten it into a text file
-    following the format of getdata(filename, arrs, sheapes)
-    in sqmodule.cpp
-    '''
-
-    file = open(filename, 'w')
-    file.write(str(len(arrs))) # the total number of arrays
-    file.write('\n')
-    for arr in arrs:
-        file.write(str(arr.ndim))
-        file.write('dim ')
-        for n in range(arr.ndim):
-            file.write(str(arr.shape[n]))
-            file.write(',')
-        file.write(str('\n'))
-        for af in arr.flatten():
-            file.write(str(af.real))
-            file.write(' ')
-            file.write(str(af.imag))
-            file.write('\n')
-    file.close()
-
-
-def save_system(H, s, lam, mu, T, Dt, Dkmax, g, scaled=False):
-    '''
-    Generates system.dat
-    '''
-    # Force the input to be numpy arrays:
-    H = np.array(H, dtype=complex)
-    s = np.array(s, dtype=complex)
-    lam = np.array(lam, dtype=complex)
-    mu = np.array(mu, dtype=complex)
-    Dtc = np.array([Dt], dtype=complex)
-    # Compute energy and eket:
-    energy, eket, ebra, U = systeminfo(H)
-    # Compute the RICs:
-    gm = getGamma(lam, mu, T, Dt, Dkmax, g, scaled)
-
-    arrs = [Dtc, energy, eket, s, gm[0], gm[1], gm[2], gm[3], gm[4]]
-    # Write the shape of arr and flatten arr into a text file, 'arrs.dat'
-    save_arrs(arrs, 'system.dat')
-
-
-def save_init(rhos0):
-    '''
-    Generates init.dat
-    '''
-    # Force the input to be numpy array:
-    rhos0 = np.array(rhos0, dtype=complex)
-    arrs = [rhos0]
-    # write the shape of rhos0 and flatten rhos0 into a text file, 'init.dat'
-    save_arrs(arrs, 'init.dat')
-
-
-def load_rhos(filename='rhos.dat'):
-    '''
-    Load rhos from filename=rhos.dat
-    '''
-    data = np.loadtxt('rhos.dat', comments='#', delimiter=',', dtype='complex')
-    # extract arrays and change dtype
-    Narr    = data[:,0].real.astype(int)   # array of N values. Use this for selecting
-    rhosarr = data[:,1]                    # array of rhos(N) values
-    
-    M2 = np.count_nonzero(Narr == 0)
-    M  = int(M2 ** 0.5)
-    Nmax = int(data[-1, 0].real) # extract Nmax
-    rhos = np.zeros((Nmax + 1, M, M), dtype=complex) 
-    
-    for N in range(Narr.min(), Narr.max()+1):
-        select = Narr == N
-        rhos[N] = rhosarr[select].reshape((M, M))
-
-    return rhos
 
 #=======================  EOF  ================================================
