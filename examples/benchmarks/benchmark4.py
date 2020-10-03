@@ -2,7 +2,7 @@
 """
 Project: S-QuAPI for CPU
 Date Created : 8/15/20
-Date Last mod: 9/17/20
+Date Last mod: 10/2/20
 Author: Yoshihiro Sato
 Description: Exciton dynamics of the FMO complex using S-QuAPI. 
              The default parameters are set to reproduce Fig.3 
@@ -101,7 +101,8 @@ if squapi == True:
         # start computing:
         cmd = bin_dir + prog + ' system.dat init.dat ' + str(Nmax) + ' ' + str(theta)
         if mode == 'mpi':
-            cmd = 'mpiexec -np ' + str(nprocs) + ' ' + cmd 
+            #cmd = 'mpiexec -np ' + str(nprocs) + ' ' + cmd 
+            cmd = 'mpiexec ' + cmd 
         if cont == True: cmd += ' --cont' 
         subprocess.call(cmd, shell=True)
     else:
