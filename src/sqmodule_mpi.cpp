@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.2.1 (x.2.x MPI)
  * Date Created : 8/23/20
- * Date Last mod: 9/14/20
+ * Date Last mod: 10/6/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_mpi.cpp 
  * Notes:
@@ -664,11 +664,20 @@ void getrhos_mpi(int N,
             // each rank computes rhosbuf:
             if (0 < N && N < Dkmax + 1){
                 auto L = 2 * n;
-                for (int i = i0; i < block; i++){
+                auto f1 = ullpow(M, L - 1);
+                auto f2 = ullpow(M, L - 2);
+                for (int i = 0; i < block; i++){
                     auto aln = Cnbuf[i];   // \alpha_n \in C_n
-                    auto arg = num2arg(aln, M, L);
-                    auto m1 = arg[L - 2];
-                    auto m2 = arg[L - 1];
+                    //--- method 1 ---------
+                    //auto arg = num2arg(aln, M, L);
+                    //auto m1 = arg[L - 2];
+                    //auto m2 = arg[L - 1];
+                    //----------------------
+                    //--- method 2 ---------
+                    auto m2 = aln / f1;
+                    aln %= f1;
+                    auto m1 = aln / f2;
+                    //----------------------
                     auto m = m1 * M + m2;
                     auto rho  = Wnbuf[i] * Dbuf[i];
                     rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);
@@ -677,7 +686,7 @@ void getrhos_mpi(int N,
             }
             else if (N >= Dkmax + 1){
                 auto L = 2 * (n - 1);
-                for (int i = i0; i < block; i++){
+                for (int i = 0; i < block; i++){
                     auto aln = Cnbuf[i];   // \alpha_{n-1} \in C_{n-1}
                     for (int m1 = 0; m1 < M; ++m1){
                         for (int m2 = 0; m2 < M; ++m2){

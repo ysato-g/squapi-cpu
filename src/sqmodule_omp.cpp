@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.1.0 (x.1.x OpenMP)
  * Date Created : 8/15/20
- * Date Last mod: 9/7/20
+ * Date Last mod: 10/6/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_omp.cpp 
  * Notes:
@@ -295,12 +295,21 @@ void getrhos_omp(int N,
         std::fill(rhosbuf.begin(), rhosbuf.end(), std::complex<double>(0, 0));
         if (0 < N && N < Dkmax + 1){
             auto L = 2 * n;
+            auto f1 = ullpow(M, L - 1);
+            auto f2 = ullpow(M, L - 2);
             #pragma omp for
             for (int i = 0; i < size; i++){
                 auto aln = Cn[i];   // \alpha_n \in C_n
-                auto arg = num2arg(aln, M, L);
-                auto m1 = arg[L - 2];
-                auto m2 = arg[L - 1];
+                //--- method 1 ---------
+                //auto arg = num2arg(aln, M, L);
+                //auto m1 = arg[L - 2];
+                //auto m2 = arg[L - 1];
+                //----------------------
+                //--- method 2 ---------
+                auto m2 = aln / f1;
+                aln %= f1;
+                auto m1 = aln / f2;
+                //----------------------
                 auto m = m1 * M + m2;
                 auto rho  = Wn[i] * D[i];
                 rho *= I(0, n, n, m1, m2, m1, m2, s, gm0, gm1, gm2, gm3, gm4);  
