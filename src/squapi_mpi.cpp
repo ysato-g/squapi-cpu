@@ -3,10 +3,10 @@
  * Major version: 0
  * version: 0.2.2 (MPI with some OpenMP for multi-node system)
  * Date Created : 8/21/20
- * Date Last mod: 9/16/20
+ * Date Last mod: 10/13/20
  * Author: Yoshihiro Sato
  * Description: the main function of squapi_mpi 
- * Usage: $ mpiexec -np (nprocs) squapi_mpi system.dat init.dat (Nmax) (theta) (--cont)
+ * Usage: $ mpiexec -np (nprocs) squapi_mpi system.dat init.dat (Nmax) (theta) (options)
  * Notes: 
  *      - Functions used in this program are written in sqmodule.cpp sqmodule_xxx.cpp
  *      - Based on C++11
@@ -14,6 +14,7 @@
  *      - size of Cn has to be lower than 2,147,483,647 (limit of int)
  *      - Supports Dkmax = 0
  *      - Takes "--cont" option for continuation to larger Nmax value
+ *      - Takes "-s" option for saving D 
  * Copyright (C) 2020 Yoshihiro Sato - All Rights Reserved
  **********************************************************************************/
 #include <iostream>
@@ -28,8 +29,8 @@
 #include "sqmodule.h"
 #include "sqmodule_omp.h"
 #include "sqmodule_mpi.h"
-#include "sysconf.h"
-#include "cont.h"
+#include "hwconfig.h"
+#include "opt.h"
 
 
 int main(int argc, char* argv[])
@@ -52,21 +53,25 @@ int main(int argc, char* argv[])
     std::vector<std::complex<double>> gm0, gm1;
     std::vector<std::vector<std::complex<double>>> gm2, gm3, gm4;
     std::vector<std::complex<double>> rhos0, D;
-    int Nmax, Dkmax, M, N0;
+    int Nmax, Dkmax, M, N0 = -1;
     double Dt, theta;
     
     // load data from files and store them in the S-QuAPI parameters: 
     load_data(argv, U, s, gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
 
-    // root sets N0 value for the N loop and D based on options:
+    // (optional) load D.dat and rhos.dat to continue from last saved point:
     if (myid == root){
-        manage_opt(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat",  N0, D);    
+        opt_load_D(argc, argv, Nmax, Dkmax, theta, "D.dat", "rhos.dat",  N0, D);    
     }
+
     // root broadcasts N0 to all ranks: 
     MPI_Bcast(&N0, 1, MPI_INT, root, MPI_COMM_WORLD);
 
     // -------- load S-QuAPI parameters -------------------------
     if (myid == root){
+        std::cout << "****************************************" << std::endl;
+        std::cout << "*         squapi_mpi ver 0.0           *" << std::endl;
+        std::cout << "****************************************" << std::endl;
         std::cout << "----- Date and Time --------------------" << std::endl;
         std::system("date");
         std::cout << "----- parameters -----------------------" << std::endl;
@@ -154,23 +159,13 @@ int main(int argc, char* argv[])
             std::cout << "N = " << N << " of " << Nmax;
             std::cout << " lap time = " << MPI_Wtime() - time1 << " sec"; 
             std::cout << " tr = " << trace(rhos) << std::endl;
-            // --- save D to D.dat for cont 
-            if (N == Nmax){
-                double time2 = MPI_Wtime();
-                std::cout << "----- saving D to D.dat ----------------" << std::endl;
-                save_D (N, theta, D, "D.dat");
-                std::cout << "    lap time = " << MPI_Wtime() - time2 << " sec" << std::endl;
-                /***********************************************
-                // store backup files in zip (optional)
-                std::system(
-                        "now=`date '+%Y_%m_%d_%H%M%S'`;\
-                        zip -rq D.dat.$now.zip D.dat;\
-                        zip -rq rhos.dat.$now.zip rhos.dat;");  
-                ************************************************/
-            }
         }
     }
+
     if (myid == root){
+        // (optional) save D to D.dat for cont 
+        opt_save_D(argc, argv, Nmax, theta, D, "D.dat");
+
         std::cout << "----- end -----------------------------" << std::endl;
         std::cout << "    elapsed_time = " << MPI_Wtime() - time0 << " sec" << std::endl;
         std::cout << "---------------------------------------" << std::endl;

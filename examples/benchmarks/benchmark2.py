@@ -2,7 +2,7 @@
 '''
 Project: S-QuAPI for CPU
 Date Created : 8/30/20
-Date Last mod: 9/12/20
+Date Last mod: 2/14/21
 Author: Yoshihiro Sato
 Description: Exciton dynamics of a pigment-protein dimer using S-QuAPI.
              The default parameters are set to reproduces Fig.3
@@ -72,7 +72,7 @@ graphics = True
 
 # ----- Generate system.dat --------------------
 if system == True:
-    sq.save_system(H, s, lam, mu, T, Dt, Dkmax, g)
+    sq.save_system(H, s, lam, mu, Dt, Dkmax, g)
 
 # -----Generate init.dat --------------------
 if init == True:

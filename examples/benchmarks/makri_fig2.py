@@ -2,6 +2,7 @@
 """
 Project: entropy 
 Date Created : 9/7/20
+Last Updated : 2/14/21
 Author: Yoshihiro Sato
 Description: Reproduction of Figrue 2 of N. Makri and D. E. Makarov,
              Journal of Chemical Physics 102 4600-4610 (1995),
@@ -82,7 +83,7 @@ rhos_list = []
 # The maximum number of memory steps:
 for Dkmax in Dkmax_list:
     # Generate system.dat for Dkamx value:
-    sq.save_system(H0, s, lam, mu, T, Dt, Dkmax, g)
+    sq.save_system(H0, s, lam, mu, Dt, Dkmax, g)
     # Run the squapi executable: 
     cmd = bin_dir + prog + ' system.dat init.dat ' + str(Nmax) + ' ' + str(theta)
     subprocess.call(cmd, shell=True)

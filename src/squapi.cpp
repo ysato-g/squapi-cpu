@@ -1,9 +1,9 @@
 /***********************************************************************************
  * Project: S-QuAPI for CPU
  * Major version: 0
- * version: 0.0.1
+ * version: 0.0
  * Date Created : 8/15/20
- * Date Last mod: 9/15/20
+ * Date Last mod: 10/8/20
  * Author: Yoshihiro Sato
  * Description: the main function of genrhos 
  * Compile: $g++ -std=c++11 squapi.cpp sqmodule.cpp -o squapi 
@@ -45,6 +45,9 @@ int main(int argc, char* argv[])
     load_data(argv, U, s, gm0, gm1, gm2, gm3, gm4, rhos0, Nmax, Dkmax, M, Dt,theta);
 
     // Show S-QuAPI parameters:
+    std::cout << "****************************************" << std::endl;
+    std::cout << "*            squapi ver 0.0            *" << std::endl; 
+    std::cout << "****************************************" << std::endl;
     std::cout << "----- Date and Time --------------------" << std::endl;
     std::system("date");
     std::cout << "----- parameters -----------------------" << std::endl;

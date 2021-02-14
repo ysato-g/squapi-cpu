@@ -2,7 +2,7 @@
 """
 Project: S-QuAPI for CPU
 Date Created : 8/15/20
-Date Last mod: 10/2/20
+Date Last mod: 2/14/21
 Author: Yoshihiro Sato
 Description: Exciton dynamics of the FMO complex using S-QuAPI. 
              The default parameters are set to reproduce Fig.3 
@@ -80,7 +80,7 @@ graphics = True
 
 # ----- Generate system.dat --------------------
 if system == True:
-    sq.save_system(H, s, lam, mu, T, Dt, Dkmax, g)
+    sq.save_system(H, s, lam, mu, Dt, Dkmax, g)
 
 # -----Generate init.dat --------------------
 if init == True:

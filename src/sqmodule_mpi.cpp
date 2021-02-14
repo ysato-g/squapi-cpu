@@ -3,7 +3,7 @@
  * Major version: 0
  * version: 0.2.1 (x.2.x MPI)
  * Date Created : 8/23/20
- * Date Last mod: 10/6/20
+ * Date Last mod: 10/13/20
  * Author: Yoshihiro Sato
  * Description: Functions used in squapi_mpi.cpp 
  * Notes:
@@ -27,7 +27,7 @@
 #include <numeric>
 #include <mpi.h>
 #include "inlines.h"
-#include "sysconf.h"
+#include "hwconfig.h"
 
 // ************************************* Functions  *****************************************
 

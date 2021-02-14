@@ -2,7 +2,7 @@
 # Project: S-QuAPI for CPU
 # Makefile for squapi-cpu
 # Date Created : 9/1/20
-# Date Last mod: 9/12/20
+# Date Last mod: 2/14/21
 # Author: Yoshihiro Sato
 #**********************************
 
@@ -12,7 +12,7 @@ BIN = bin
 INC = include
 
 # compilers and options:
-CXX = g++-10 
+CXX ?= g++
 MPICXX = mpicxx 
 CXX_FLAGS = -I $(INC) -fopenmp -std=c++11 -O3
 
@@ -22,12 +22,12 @@ PROGS_MPI = $(PROGS_OMP) squapi_mpi
 PROGS = $(PROGS_MPI) 
 
 # object files involved:
-OBJS_OMP = sqmodule.o sqmodule_omp.o cont.o  
+OBJS_OMP = sqmodule.o sqmodule_omp.o opt.o  
 OBJS_MPI = $(OBJS_OMP) sqmodule_mpi.o 
 OBJS = $(OBJS_MPI)
 
 # dependencies:
-DEPS_OMP = $(INC)/sqmodule.h $(INC)/sqmodule_omp.h $(INC)/cont.h\
+DEPS_OMP = $(INC)/sqmodule.h $(INC)/sqmodule_omp.h $(INC)/opt.h\
 		   $(OBJS_OMP)
 DEPS_MPI = $(INC)/* $(OBJS_MPI) 
 
@@ -43,11 +43,11 @@ sqmodule.o: $(SRC)/sqmodule.cpp $(INC)/inlines.h $(INC)/phys.h
 sqmodule_omp.o: $(SRC)/sqmodule_omp.cpp $(INC)/inlines.h
 	$(CXX) $(CXX_FLAGS) -c $(SRC)/sqmodule_omp.cpp -o sqmodule_omp.o 
 
-sqmodule_mpi.o: $(SRC)/sqmodule_mpi.cpp $(INC)/inlines.h $(INC)/sysconf.h
+sqmodule_mpi.o: $(SRC)/sqmodule_mpi.cpp $(INC)/inlines.h $(INC)/hwconfig.h
 	$(MPICXX) $(CXX_FLAGS) -c $(SRC)/sqmodule_mpi.cpp -o sqmodule_mpi.o 
 
-cont.o: $(SRC)/cont.cpp 
-	$(CXX) $(CXX_FLAGS) -c $(SRC)/cont.cpp -o cont.o 
+opt.o: $(SRC)/opt.cpp 
+	$(CXX) $(CXX_FLAGS) -c $(SRC)/opt.cpp -o opt.o 
 
 squapi: $(SRC)/squapi.cpp $(INC)/sqmodule.h sqmodule.o 
 	$(CXX) $(CXX_FLAGS) sqmodule.o $(SRC)/squapi.cpp -o squapi 

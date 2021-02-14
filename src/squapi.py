@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-squapi module Version 0.26
-Last Updated: 10/1/2020
+squapi module Version 0.27
+Last Updated: 2/14/2021
 Author: Yoshihiro Sato
 Description: This module requires
     numpy 1.11.1 or above
@@ -83,7 +83,7 @@ def systeminfo(H):
 
 
 
-def getRIC(lam, mu, T, Dt, Dkmax, g, scaled=False):
+def getRIC(lam, mu, Dt, Dkmax, g, scaled=False):
     '''
     Generates the reduced influence coeffcienets
     See Eq.(9) of Sato J.Chem.Phys.150(2019)224108
@@ -156,7 +156,7 @@ def save_arrs(arrs, filename):
     file.close()
 
 
-def save_system(H, s, lam, mu, T, Dt, Dkmax, g, scaled=False):
+def save_system(H, s, lam, mu, Dt, Dkmax, g, scaled=False):
     '''
     Generates system.dat
     '''
@@ -170,7 +170,7 @@ def save_system(H, s, lam, mu, T, Dt, Dkmax, g, scaled=False):
     # Compute energy and eket:
     energy, eket, ebra, U = systeminfo(H)
     # Compute the RICs:
-    gm = getRIC(lam, mu, T, Dt, Dkmax, g, scaled)
+    gm = getRIC(lam, mu, Dt, Dkmax, g, scaled)
 
     arrs = [Dtc, energy, eket, s, gm[0], gm[1], gm[2], gm[3], gm[4]]
     # Write the shape of arr and flatten arr into a text file, 'arrs.dat'
@@ -233,15 +233,16 @@ def Gamma(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
     mid    = 1e5  : break up [0, np.inf] into [0, mid] + [mid, np.inf]
     epsrel = 1e-5 : epsrel value
     '''
+    f = lambda omega, t: J(omega) / (hbar * omega**2) * (1 - np.cos(omega * t))
     if diff == 0:
-        f = lambda omega, t: J(omega) / (hbar * omega**2) * (1 - np.cos(omega * t))
+        pass
     elif diff == 1:
         f = lambda omega, t: J(omega) / (hbar * omega) * np.sin(omega * t)
     elif diff == 2:
         f = lambda omega, t: J(omega) / hbar * np.cos(omega * t)
     re = lambda omega, T, t : (1 / np.tanh(hbar * omega / (2 * kB * T))) * f(omega, t)  
     #val = quad(re, 0, np.inf, args=(T, t))[0]
-    val  = quad(re, 0, mid, epsrel=epsrel,  args=(T, t))[0]
+    val  = quad(re,   0,    mid, epsrel=epsrel, args=(T, t))[0]
     val += quad(re, mid, np.inf, epsrel=epsrel, args=(T, t))[0]
     return val
 
@@ -254,16 +255,17 @@ def phi(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
     epsrel = 1e-5 : epsrel value
     diff   = 0    : the order of differentiation with respect to time 
     '''
+    f = lambda omega, t: J(omega) / (hbar * omega**2) * np.sin(omega * t)
     if diff == 0:
-        f = lambda omega, t: J(omega) / (hbar * omega**2) * np.sin(omega * t)
+        pass
     elif diff == 1:
         f = lambda omega, t: J(omega) / (hbar * omega) * np.cos(omega * t)
     elif diff == 2:
         f = lambda omega, t: J(omega) / hbar * (- np.sin(omega * t))
     im = lambda omega, t : f(omega, t)
     #val  = quad(im, 0, np.inf, args=t)[0]
-    val = quad(im, 0, mid, epsrel=epsrel,  args=t)[0]
-    val+= quad(im, mid, np.inf, epsrel=epsrel,  args=t)[0]
+    val = quad(im,   0,    mid, epsrel=epsrel, args=t)[0]
+    val+= quad(im, mid, np.inf, epsrel=epsrel, args=t)[0]
     return val
 
 def gDQ(t, T, J, diff=0, mid=1e5, epsrel=1e-5):
@@ -315,7 +317,7 @@ def lamexp(kappa, Omega, p = 0):
     with exponential cutoff. 
     See Eq.(A1) of Sato J.Chem.Phys.150(2019)224108
     '''
-    return kappa * Omega * np.gamma(1 + p)
+    return kappa * hbar * Omega * gamma(1 + p)
 
 def PolyGamma(n, z, rmax=10000):
     '''
@@ -887,24 +889,5 @@ def Jgauss(omega, lam, tau):
     '''
     A = lam * tau / (np.pi)**0.5
     return A * omega * np.exp(-(omega * tau / 2)**2) 
-
-
-#============================================================================
-#           BELOW JUST FOR BACKWARD COMPATIBILITY
-#             TO BE DEPRECATED IN FUTRE UPDATE
-#============================================================================
-def getGamma(lam, mu, T, Dt, Dkmax, g, scaled=False):
-    return getRIC(lam, mu, T, Dt, Dkmax, g, scaled=False)
-def gnum(t, T, J, mid=1e5, epsrel=1e-5): return gDQ(t, T, J, mid, epsrel)
-def dgnum(t, T, J): return dgDQ(t, T, J)
-def ddgnum(t, T, J): return ddgDQ(t, T, J)
-def lamnum(J): return lamDQ(J)
-def JLD0(omega, kappa, Omega): return JDL0(omega, kappa, Omega)
-def gLD0(t, kappa, Omega, T): return gDL0(t, kappa, Omega, T)
-def JLD(omega, lam, Omega): return JDL(omega, lam, Omega)
-def lamLD(kappa, Omega): return lamDL(kappa, Omega)
-def gLD(t, lam, Omega, T): return gDL(t, lam, Omega, T)
-def JH(omega, omegaH, SH, gammaH): return JH1(omega, omegaH, SH, gammaH)
-
 
 #=======================  EOF  ================================================
